@@ -1,35 +1,96 @@
 % ======================================================================
 % 1. INTRODUCTION  (budget: 1.5 pages)
-% Job of the chapter: make the reader accept that "password" is the wrong
-% unit of analysis before chapter 2 starts defining terms.
 % ======================================================================
 \section{Introduction}
 \label{sec:intro}
 
 \subsection{Motivation}
-% CLAIM (0.4): NTLM has never been cryptographically broken, yet it is the
-% most exploited authentication protocol on Windows -- because the attack
-% surface is the key handling, not the cipher.
-% Beats: scale of NTLM exposure across SMB/RPC/WinRM/LDAP/MSSQL/HTTP;
-% RC4 still accepted by DCs; Microsoft's deprecation announcement as the
-% framing hook (the technique matters most while the protocol is in place).
+
+Microsoft now lists NTLM, including NTLMv2, among the deprecated features of the
+Windows client \cite{ms-deprecated-features}. Deprecation is not removal. The
+protocol stays negotiable on every supported release, and the carriers are
+numerous: SMB, MSRPC, WinRM, LDAP, MSSQL, and HTTP through Negotiate
+\cite{ms-ntlm-overview}. An estate that has standardised on Kerberos for
+interactive logon still accepts NTLM from a machine account, an application
+service, or a legacy appliance, and each acceptance is another door with the
+same lock.
+
+NTLMv2, the version still negotiated in practice, is not broken. A recorded
+exchange supports an offline attack against the response, and what such an
+attack recovers is the password, from which the hash follows; the hash itself
+never crosses the wire. The response computation survived scrutiny intact: a
+server challenge, a per-attempt client value, and a key that stays on the host.
+The attacks that matter therefore leave the computation alone. They read the key
+from the host that stores it and compute the next response locally, which is the
+credential-theft model in Microsoft's mitigation guidance and the technique
+catalogued as pass-the-hash
+\cite{microsoft-2014-pth,ewaida-2010-pth,mitre-t1550-002}. An environment can
+disable LM, require NTLMv2, enforce SMB signing and still lose a domain, because
+none of those settings govern what LSASS retains in memory during a logon.
+
+Kerberos does not close the gap. Active Directory still accepts RC4-HMAC
+tickets keyed by the NT hash itself, so an environment that has switched NTLM
+off by policy is not thereby protected \cite{ms-kile,ms-restrict-ntlm}.
+Multi-factor authentication at the perimeter covers the services that terminate
+it, not the file share that accepts a response from a workstation. The technique
+therefore matters most precisely while the protocol is still deployed, and in
+most estates the deployment outlasts the retirement notice by years.
+
+The economics explain the durability. A single workstation yields a key that is
+frequently valid on a neighbouring host, and using it requires no exploit, only
+a client willing to speak the protocol. Intrusions of this shape appear in the
+later stages of major campaigns, where credential theft and exploitation are
+used together rather than one instead of the other \cite{uscert-ta17-181a}.
+Removing the compromised host from the network changes nothing about the key,
+which remains valid wherever it is accepted.
 
 \subsection{Problem statement}
-% CLAIM (0.3): hold up the single sentence the whole essay defends.
-% "Because both protocols let a client complete authentication from a locally
-%  stored derived key, disclosure of that key is equivalent to disclosure of
-%  the account, independent of password strength and of transport encryption."
+
+This paper defends one sentence: because NTLM and Active Directory Kerberos
+both let a client complete authentication locally from a derived key held on the
+host, disclosure of that key is equivalent to disclosure of the account,
+independent of password strength and of transport encryption. Both protocols
+prove possession of a key rather than knowledge of a password. The password is
+one way to obtain the key and, once the key is obtained, it stops being
+relevant. Transport encryption protects the exchange, not the copy at
+rest. Pass-the-hash and pass-the-key are not exploits in the ordinary sense;
+they are the protocols executed as specified, with a different source for the
+key, and a control that treats authentication as a password-checking problem
+addresses the wrong object.
 
 \subsection{Contributions}
-% CLAIM (0.4): four numbered items, each one a chapter.
-%   1. A from-first-principles account of the key material Windows holds (ch. 2-3).
-%   2. A derivation-level explanation of why PtH is not replay (ch. 4).
-%   3. A reproducible PoC -- PtH over SMB and WinRM, PtK to a TGT -- with
-%      captured evidence on both ends of the connection (ch. 6-7).
-%   4. Measured before/after of the controls that actually break the chain (ch. 9).
-% Repository link appears here as well as in the title block.
+
+\begin{enumerate}[label=\arabic*.]
+\item \textbf{Where the key lives.} Chapters 2 and 3 establish that Windows
+  authority travels in the access token, that the same token can be produced
+  from key material stored on the host, and that every pass-the-X technique is
+  an instance of one property: the authenticator is whatever secret the
+  protocol's proof can be computed from.
+\item \textbf{Why this is not replay.} Chapter 4 derives the response
+  computation and shows that replay protection cannot answer an attempt
+  computed from the key, because each attempt is fresh and bound to the
+  server's challenge. It also separates what SMB signing defends from
+  what it does not.
+\item \textbf{A reproducible demonstration.} Chapters 6 and 7 present a
+  three-host lab in which we demonstrate pass-the-hash over SMB and
+  WinRM and pass-the-key to a TGT, with evidence captured on
+  both ends of each connection. Success is recorded as a log line rather than
+  asserted.
+\item \textbf{Controls measured, not listed.} Chapter 9 reports before-and-after
+  outcomes for the controls that break the chain, including Credential Guard and
+  the Protected Users group, and distinguishes those that change the evidence
+  from those that only change a policy setting
+  \cite{ms-credential-guard,ms-protected-users}. Chapter 10 states the
+  conditions under which attempts fail in practice.
+\end{enumerate}
+
+The lab definition, the scenario driver, and the captured output are kept in the
+accompanying repository.
 
 \subsection{Scope and non-goals}
-% CLAIM (0.2): ticket and certificate abuse share the root cause but need a
-% different lab (ticket lifecycle, AD CS misconfiguration); they are cited,
-% not implemented. Two sentences. No defensive justification.
+
+The scope is pass-the-hash and pass-the-key on Windows and Active Directory.
+Ticket forgery and certificate-based abuse rest on the same property but require
+a different lab, one built around ticket lifetimes and certificate authority
+misconfiguration, so they are discussed and not implemented. Protocol
+cryptanalysis is out of scope entirely.

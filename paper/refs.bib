@@ -1,36 +1,62 @@
 % ======================================================================
 %  refs.bib -- bibliography
-%  NOTE: every entry must be verified against the primary source before
-%  submission (DOI / URL live, correct year, correct author spelling).
-%  Entries marked TODO are starting points, not confirmed citations.
+%  Numeric citations, biblatex + biber, sorted by name/year.
+%  Every entry below was checked against the publisher's page.
+%  Entries carrying a "verify" note still need a final URL check before
+%  submission; they are accurate as to title, author and year.
 % ======================================================================
 
-% ---------- primary protocol specifications ----------
+% ---------------------------------------------------------------- specs
 @techreport{ms-nlmp,
   author      = {{Microsoft Corporation}},
   title       = {{[MS-NLMP]}: NT LAN Manager (NTLM) Authentication Protocol},
   institution = {Microsoft Open Specifications},
   year        = {2024},
-  note        = {Protocol revision and message formats}
+  url         = {https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp/},
+  urldate     = {2026-11-25}
 }
 
 @techreport{ms-kile,
   author      = {{Microsoft Corporation}},
   title       = {{[MS-KILE]}: Kerberos Protocol Extensions},
   institution = {Microsoft Open Specifications},
-  year        = {2024}
+  year        = {2024},
+  url         = {https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-kile/},
+  urldate     = {2026-11-25}
+}
+
+@techreport{ms-smb2,
+  author      = {{Microsoft Corporation}},
+  title       = {{[MS-SMB2]}: Server Message Block ({SMB}) Protocol Versions 2 and 3},
+  institution = {Microsoft Open Specifications},
+  year        = {2024},
+  note        = {Session key derivation and message signing},
+  url         = {https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/},
+  urldate     = {2026-11-25}
 }
 
 @techreport{rfc4120,
   author      = {Neuman, Clifford and Yu, Tom and Hartman, Sam and Raeburn, Kenneth},
   title       = {The Kerberos Network Authentication Service (V5)},
-  institution = {IETF},
+  institution = {Internet Engineering Task Force},
   type        = {RFC},
   number      = {4120},
-  year        = {2005}
+  year        = {2005},
+  url         = {https://www.rfc-editor.org/rfc/rfc4120}
 }
 
-% ---------- Windows internals ----------
+@techreport{rfc3962,
+  author      = {Raeburn, Kenneth},
+  title       = {Advanced Encryption Standard (AES) Encryption for Kerberos 5},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {3962},
+  year        = {2005},
+  url         = {https://www.rfc-editor.org/rfc/rfc3962},
+  note        = {String-to-key and key derivation for etypes 0x11 and 0x12}
+}
+
+% ------------------------------------------------------ Windows internals
 @book{windows-internals,
   author    = {Yosifovich, Pavel and Ionescu, Alex and Russinovich, Mark E. and Solomon, David A.},
   title     = {Windows Internals, Part 1},
@@ -39,7 +65,83 @@
   year      = {2017}
 }
 
-% ---------- the attack ----------
+% ------------------------------------------------- vendor documentation
+@misc{ms-ntlm-overview,
+  author       = {{Microsoft Corporation}},
+  title        = {NTLM Overview},
+  howpublished = {Microsoft Learn, Windows Server},
+  year         = {2023},
+  url          = {https://learn.microsoft.com/en-us/windows-server/security/kerberos/ntlm-overview},
+  urldate      = {2026-11-25}
+}
+
+@misc{ms-kerberos-overview,
+  author       = {{Microsoft Corporation}},
+  title        = {Kerberos Authentication Overview},
+  howpublished = {Microsoft Learn, Windows Server},
+  year         = {2023},
+  url          = {https://learn.microsoft.com/en-us/windows-server/security/kerberos/kerberos-authentication-overview},
+  urldate      = {2026-11-25}
+}
+
+@misc{ms-deprecated-features,
+  author       = {{Microsoft Corporation}},
+  title        = {Deprecated Features in the Windows Client},
+  howpublished = {Microsoft Learn},
+  year         = {2024},
+  url          = {https://learn.microsoft.com/en-us/windows/whats-new/deprecated-features},
+  note         = {States that NTLM, including NTLMv2, is deprecated},
+  urldate      = {2026-11-25}
+}
+
+@misc{ms-credential-guard,
+  author       = {{Microsoft Corporation}},
+  title        = {Credential Guard Overview},
+  howpublished = {Microsoft Learn, Windows Security},
+  year         = {2024},
+  url          = {https://learn.microsoft.com/en-us/windows/security/identity-protection/credential-guard/},
+  urldate      = {2026-11-25}
+}
+
+@misc{ms-protected-users,
+  author       = {{Microsoft Corporation}},
+  title        = {Protected Users Security Group},
+  howpublished = {Microsoft Learn, Windows Server},
+  year         = {2023},
+  url          = {https://learn.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/protected-users-security-group},
+  urldate      = {2026-11-25}
+}
+
+@misc{ms-restrict-ntlm,
+  author       = {{Microsoft Corporation}},
+  title        = {Network Security: Restrict NTLM},
+  howpublished = {Microsoft Learn, Windows Security Policy Settings},
+  year         = {2023},
+  note         = {Group policy settings for auditing and restricting outbound NTLM; verify URL},
+  urldate      = {2026-11-25}
+}
+
+@misc{ms-advisory-2871997,
+  author       = {{Microsoft Corporation}},
+  title        = {Microsoft Security Advisory 2871997: Update to Improve Credentials Protection and Management},
+  howpublished = {Microsoft Learn, Security Updates},
+  year         = {2016},
+  note         = {Published 13 May 2014; documents disabling WDigest credential caching by default from Windows 8.1 and Windows Server 2012 R2 through the UseLogonCredential value},
+  url          = {https://learn.microsoft.com/en-us/security-updates/securityadvisories/2016/2871997},
+  urldate      = {2026-11-25}
+}
+
+@misc{ms-uac-remote-restrictions,
+  author       = {{Microsoft Corporation}},
+  title        = {User Account Control and Remote Restrictions},
+  howpublished = {Microsoft Learn, Windows Server troubleshooting},
+  year         = {2026},
+  note         = {Original KB 951016; documents the filtered token and LocalAccountTokenFilterPolicy},
+  url          = {https://learn.microsoft.com/en-us/troubleshoot/windows-server/windows-security/user-account-control-and-remote-restriction},
+  urldate      = {2026-11-25}
+}
+
+% ------------------------------------------------------------- attacks
 @techreport{microsoft-2014-pth,
   author      = {{Microsoft Corporation}},
   title       = {Mitigating Pass-the-Hash ({PtH}) Attacks and Other Credential Theft Techniques},
@@ -49,12 +151,22 @@
   note        = {Version 2}
 }
 
+@techreport{ewaida-2010-pth,
+  author      = {Ewaida, Bashar},
+  title       = {Pass-the-Hash Attacks: Tools and Mitigation},
+  institution = {SANS Institute},
+  type        = {GIAC (GCIH) Gold Certification Research Paper},
+  year        = {2010},
+  url         = {https://www.sans.org/white-papers/33283/}
+}
+
 @misc{mitre-t1550-002,
   author       = {{MITRE}},
   title        = {{T1550.002} Use Alternate Authentication Material: Pass the Hash},
   howpublished = {MITRE ATT\&CK},
   year         = {2024},
-  url          = {https://attack.mitre.org/techniques/T1550/002/}
+  url          = {https://attack.mitre.org/techniques/T1550/002/},
+  urldate      = {2026-11-25}
 }
 
 @misc{mitre-t1550,
@@ -62,54 +174,41 @@
   title        = {{T1550} Use Alternate Authentication Material},
   howpublished = {MITRE ATT\&CK},
   year         = {2024},
-  url          = {https://attack.mitre.org/techniques/T1550/}
+  url          = {https://attack.mitre.org/techniques/T1550/},
+  urldate      = {2026-11-25}
 }
 
-% TODO verify year of public release (2007 vs 2008) before citing
-@misc{ochoa-pth-toolkit,
-  author       = {Ochoa, Hernan},
-  title        = {Pass-The-Hash Toolkit},
-  howpublished = {Core Security Technologies},
-  year         = {2007}
-}
-
-@misc{deply-mimikatz,
-  author       = {Deply, Benjamin},
-  title        = {Mimikatz},
-  year         = {2007},
-  url          = {https://github.com/gentilkiwi/mimikatz},
-  note         = {Tool; first public release 2007, credential-extraction modules from 2011}
-}
-
-@misc{fortra-impacket,
-  author       = {{Fortra}},
-  title        = {Impacket},
-  url          = {https://github.com/fortra/impacket},
-  note         = {Python implementations of SMB, MSRPC, NTLM and Kerberos}
-}
-
-@misc{netexec,
-  author       = {{NetExec Project}},
-  title        = {NetExec (nxc)},
-  url          = {https://github.com/Pennyw0rth/NetExec}
-}
-
-% ---------- in the wild ----------
 @techreport{uscert-ta17-181a,
   author      = {{US-CERT}},
   title       = {Petya Ransomware},
   institution = {Department of Homeland Security},
   type        = {Alert},
   number      = {TA17-181A},
-  year        = {2017}
+  year        = {2017},
+  url         = {https://www.cisa.gov/news-events/alerts/2017/06/30/petya-ransomware}
 }
 
-% ---------- NTLM deprecation / current state ----------
-% TODO confirm exact document title before citing
-@misc{microsoft-ntlm-deprecation,
-  author       = {{Microsoft Corporation}},
-  title        = {Deprecation of {NTLM} in Windows 11},
-  year         = {2024},
-  howpublished = {Microsoft Learn},
-  note         = {Placeholder: replace with the canonical Learn page and access date}
+% ---------------------------------------------------------------- tools
+@misc{deply-mimikatz,
+  author       = {Deply, Benjamin},
+  title        = {Mimikatz},
+  year         = {2007},
+  url          = {https://github.com/gentilkiwi/mimikatz},
+  note         = {Credential extraction modules from 2011 onward},
+  urldate      = {2026-11-25}
+}
+
+@misc{fortra-impacket,
+  author       = {{Fortra}},
+  title        = {Impacket},
+  url          = {https://github.com/fortra/impacket},
+  note         = {Python implementations of SMB, MSRPC, NTLM and Kerberos},
+  urldate      = {2026-11-25}
+}
+
+@misc{netexec,
+  author       = {{NetExec Project}},
+  title        = {NetExec},
+  url          = {https://github.com/Pennyw0rth/NetExec},
+  urldate      = {2026-11-25}
 }
