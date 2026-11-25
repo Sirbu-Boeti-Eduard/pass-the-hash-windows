@@ -1,0 +1,30 @@
+.DS_Store
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.bix
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+paper/main.pdf
+
+# Evidence: large captures stay local or go in a release, not in git history
+poc/evidence/**/*.pcap
+poc/evidence/**/*.pcapng
+poc/evidence/**/*.zip
+poc/evidence/**/*.7z
+poc/evidence/**/*.evtx
+
+# Lab secrets: never commit hashes, keys or credentials from the lab
+poc/**/secrets.local.*
+poc/**/*.kirbi
+poc/**/*.pfx

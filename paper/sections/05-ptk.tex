@@ -1,0 +1,30 @@
+% ======================================================================
+% 5. PASS-THE-KEY / OVERPASS-THE-HASH  (budget: 2 pages)
+% Gate: only expand past skeleton if the 20 Dec decision is "in".
+% ======================================================================
+\section{Pass-the-Key: the Kerberos Face of the Same Primitive}
+\label{sec:ptk}
+
+\subsection{Why the NT hash is also a Kerberos key}
+% TODO
+% - RC4-HMAC in AD uses the NT hash directly as the key.
+% - AES128/AES256 keys are derived from the plaintext with PBKDF2-like
+%   string-to-key salt (realm + username), so they are NOT derivable from the
+%   hash. This asymmetry is why RC4 is still negotiated in real estates and
+%   why its removal matters.
+% - Consequence: an attacker with a hash can request a TGT, and everything
+%   downstream is normal Kerberos.
+
+\subsection{Building an AS-REQ from a key}
+% TODO
+% - Pre-authentication: encrypted timestamp keyed with the client key.
+% - What changes when you hold the key instead of the password: nothing,
+%   except that you cannot derive AES keys.
+% - Result: a TGT whose PAC says the user; then normal TGS requests.
+% - Note the downgrade angle: forcing etype 0x17 makes the hash sufficient.
+
+\subsection{What PtK buys over PtH}
+% TODO
+% - Kerberos-only environments (NTLM disabled) stop PtH but not PtK.
+% - Access to services that refuse NTLM.
+% - Tickets can be used from non-Windows hosts, so the attacker's OS is irrelevant.

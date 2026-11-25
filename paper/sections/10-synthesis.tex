@@ -1,0 +1,20 @@
+% ======================================================================
+% 10. SYNTHESIS  (budget: 1 page)
+% Answer the question the title implies: so when does this still work?
+% ======================================================================
+\section{When These Attacks Actually Work}
+\label{sec:synthesis}
+
+% TODO, as a decision chain rather than prose bullets:
+%   1. Is NTLM accepted somewhere on the path?          -> PtH viable
+%   2. Is RC4 enabled for the account?                  -> PtK viable
+%   3. Is the hash reachable on a host we already own?  -> both viable
+%   4. Is Credential Guard / PPL deployed?              -> extraction blocked,
+%                                                          reuse of live session
+%                                                          is not
+%   5. Is the account authorised on the target?         -> the real bottleneck
+%
+% Then one paragraph on the trend: NTLM deprecation and RC4 removal shrink
+% this space over the next few years, while the class of attack survives as
+% long as any derived-key authenticator exists. PtT and PtC are the same
+% argument wearing different clothes.

@@ -1,0 +1,34 @@
+% ======================================================================
+% 3. FRAMING THE ATTACK FAMILY  (budget: 1.5 pages)
+% Goal: one mental model that makes PtH, PtK, PtT and PtC the same shape.
+% ======================================================================
+\section{Credential Material as a Bearer Capability}
+\label{sec:framing}
+
+\subsection{The unifying property}
+% TODO
+% - The authenticator is not the password; it is any secret from which the
+%   protocol's proof can be computed.
+% - Enumerate the material Windows can hold: NT hash, AES keys, TGT/TGS
+%   session keys, certificates with PKINIT mapping.
+% - Consequence: each material has a matching "pass-the-X" attack, and the
+%   defence for all of them is the same shape (do not let the material exist
+%   on the host, or make it unusable off the host).
+
+\subsection{Threat model and preconditions}
+% TODO -- be rigorous here, it is what separates the essay from a blog post
+% - Attacker starting position: foothold on one host with local admin, or
+%   credential material obtained out of band.
+% - What PtH requires: (a) the NT hash, (b) a service accepting NTLM,
+%   (c) the account being authorised on the target (local admin / remote
+%   administration rights), (d) reachability.
+% - State clearly: PtH is lateral movement, not privilege escalation. It moves
+%   an existing privilege set to another host.
+% - Local-account caveat: UAC remote restrictions and
+%   LocalAccountTokenFilterPolicy -- a real-world papercut worth one paragraph.
+
+\subsection{Taxonomy and position of the study}
+% TODO
+% - Small figure or table: PtH | PtK | (PtT) | (PtC), with the material each
+%   consumes and the protocol family each speaks.
+% - One paragraph on the two excluded variants: same root cause, different lab.

@@ -1,0 +1,110 @@
+% ======================================================================
+%  Windows Credential Reuse: Pass-the-Hash and Pass-the-Key
+%  Security Protocols -- course essay (MSc)
+%
+%  Build: pdflatex main && biber main && pdflatex main && pdflatex main
+%  Toolchain: pdfLaTeX + Biber. No shell-escape required.
+%
+%  Style: minimal article class, Palatino-like serif, numeric citations.
+%  Chosen over heavyweight report templates because the deliverable is a
+%  ~22 page essay with hand-authored TikZ diagrams, not a thesis.
+%  Preamble adapted in spirit from muktapalshikar/getwriting (article class
+%  + a curated package set), reimplemented here to avoid vendored fonts.
+% ======================================================================
+\documentclass[11pt,a4paper]{article}
+
+% ---------- fonts & encoding ----------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathpazo}          % Palatino clone, safe under pdfLaTeX
+\usepackage{microtype}
+
+% ---------- layout ----------
+\usepackage[a4paper,margin=2.6cm,headheight=14pt]{geometry}
+\usepackage{parskip}
+\setlength{\parskip}{0.5em}
+
+% ---------- structure ----------
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection}{0.8em}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.7em}{}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+% ---------- floats, tables, figures ----------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{enumitem}
+\setlist{itemsep=2pt,topsep=3pt}
+\graphicspath{{figures/}}
+
+% ---------- colour, diagrams ----------
+\usepackage{xcolor}
+\definecolor{inkgrey}{RGB}{60,60,60}
+\definecolor{termbg}{RGB}{250,250,250}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc}
+% \usepackage{pgfplots}   % enable only if a chart (not a diagram) is needed
+
+% ---------- terminal / command output ----------
+% Used instead of minted to keep the build free of -shell-escape.
+\usepackage{listings}
+\lstdefinestyle{term}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{termbg},
+  frame=single,
+  rulecolor=\color{black!15},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  xleftmargin=1.2em,
+  framexleftmargin=0.6em,
+  aboveskip=0.8em,
+  belowskip=0.8em
+}
+\lstset{style=term}
+
+% ---------- quotations & links ----------
+\usepackage{csquotes}
+\usepackage[colorlinks=true,linkcolor=inkgrey,citecolor=inkgrey,urlcolor=inkgrey]{hyperref}
+
+% ---------- bibliography ----------
+\usepackage[backend=biber,style=numeric-comp,sorting=nyt,maxbibnames=6]{biblatex}
+\addbibresource{refs.bib}
+
+% ---------- title ----------
+\title{\bfseries Windows Credential Reuse:\\[0.3em]
+       Pass-the-Hash and Pass-the-Key against NTLM and Kerberos}
+\author{Author One \and Author Two\\[0.4em]
+        \small Security Protocols --- MSc}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{flushleft}
+\small\textbf{PoC repository:} \url{https://github.com/Sirbu-Boeti-Eduard/pass-the-hash-windows}
+\end{flushleft}
+
+\input{sections/00-abstract}
+\input{sections/01-introduction}
+\input{sections/02-background}
+\input{sections/03-framing}
+\input{sections/04-pth}
+\input{sections/05-ptk}
+\input{sections/06-poc}
+\input{sections/07-results}
+\input{sections/08-detection}
+\input{sections/09-mitigation}
+\input{sections/10-synthesis}
+\input{sections/11-conclusion}
+
+\printbibliography[heading=bibintoc,title={References}]
+
+\appendix
+\input{sections/12-appendix}
+
+\end{document}

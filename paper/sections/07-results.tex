@@ -1,0 +1,27 @@
+% ======================================================================
+% 7. RESULTS  (budget: 1.5 pages, mostly tables and figures)
+% Rule: every claim here is backed by a file in poc/evidence/ named here.
+% ======================================================================
+\section{Results}
+\label{sec:results}
+
+\subsection{Success matrix}
+% TODO
+% - Table: rows = protocols (SMB, WinRM, WMI/DCOM, RDP-restricted, LDAP, MSSQL),
+%   columns = PtH, PtK; cells = success / failure + one-word reason.
+% - Include the negative results. A matrix with two failures is more credible
+%   than one that is all green.
+% Figure: fig-success-matrix (heatmap version, optional).
+
+\subsection{Captured evidence}
+% TODO
+% - For each scenario: the command outcome, the target's 4624/4672, the DC's
+%   4776 or 4768/4769, and the corresponding packet capture excerpt.
+% - Present as one compact figure per scenario: log excerpt next to capture
+%   excerpt on a shared timeline.
+
+\subsection{Boundaries observed}
+% TODO
+% - Cases that did not work and why: token filtering for local accounts,
+%   accounts without target privileges, AES-only enforcement blocking PtK,
+%   signing when the session key is not available.

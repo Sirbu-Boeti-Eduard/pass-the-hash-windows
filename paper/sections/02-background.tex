@@ -1,0 +1,63 @@
+% ======================================================================
+% 2. BACKGROUND  (budget: 4 pages, the heaviest chapter)
+% Goal: after this chapter the reader can follow chapter 4 without a glossary.
+% Structure: account -> secret -> derivation -> protocol -> carriage.
+% ======================================================================
+\section{Background: Windows Authentication from Zero}
+\label{sec:background}
+
+\subsection{Accounts, SIDs and the access token}
+% TODO
+% - SAM database, local vs domain accounts, SIDs, RIDs.
+% - The access token: who the process is, which groups, which privileges.
+% - Why authentication and authorisation are separate problems here.
+% Figure: none yet.
+
+\subsection{Where Windows keeps secrets}
+% TODO
+% - LSASS as the process that holds credential material; why it is the target.
+% - SAM hive, SECURITY hive, LSA secrets, DPAPI, cached domain credentials.
+% - The distinction between reversible storage (some legacy schemes) and
+%   derived storage (NT hash) -- and why the latter is still fatal.
+% - Mention WDigest as the historical accident that made plaintext available;
+%   keep to two sentences, it is context, not the topic.
+
+\subsection{From password to key material}
+% TODO -- this subsection carries the essay's central claim
+% - NT hash = MD4(UTF-16LE(password)). Why it is unsalted and unslow.
+% - Chains: NT hash -> NTLM response; NT hash -> RC4-HMAC Kerberos key;
+%   plaintext -> AES128/AES256 keys (i.e. AES is NOT reachable from the hash).
+% - Say it explicitly: the hash is a key, not a stolen password in an odd format.
+% Figure: fig-hash-derivation (the derivation tree). Author this one first,
+% it is reused in sections 4 and 5.
+
+\subsection{NTLM: challenge-response}
+% TODO
+% - Type 1/2/3 messages; NTLMv1 vs NTLMv2 differences at the level of what is
+%   hashed (server challenge only vs challenge + client challenge + timestamp
+%   + target info).
+% - NetNTLMv2 as the on-the-wire artifact and why it is not the NT hash.
+% - Session key derivation from the response and the NT hash.
+% Figure: fig-ntlm-flow.
+% Sub-point to make explicit now: the server never sees a password and never
+% sees the NT hash either. It sees a response it can verify.
+
+\subsection{Kerberos in Active Directory}
+% TODO
+% - KDC role of the DC; AS-REQ/AS-REP; TGT; TGS-REQ/TGS-REP; service tickets.
+% - PAC and why it makes AD Kerberos more than stock RFC 4120.
+% - Pre-authentication: the encrypted timestamp. This is the hook for PtK.
+% - Encryption types: RC4-HMAC (0x17) vs AES (0x12/0x11) and what each is keyed on.
+% Figure: fig-kerberos-flow.
+
+\subsection{Which protocols carry which authentication}
+% TODO
+% - Table: SMB, MSRPC/EPM, WinRM, WMI/DCOM, RDP, LDAP, MSSQL, HTTP/Negotiate,
+%   each with: default auth, whether NTLM is accepted, whether it can be disabled.
+% - This table is the reference for chapter 4's coverage discussion.
+
+\subsection{Logon types and the token lifetime problem}
+% TODO
+% - Type 2 (interactive), 3 (network), 10 (RemoteInteractive), 9 (NewCredentials).
+% - Why a type-3 logon does not leave reusable credentials on the target, and
+%   why that is the property that makes PtH a lateral-movement primitive.

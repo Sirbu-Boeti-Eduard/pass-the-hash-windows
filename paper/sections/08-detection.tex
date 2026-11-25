@@ -1,0 +1,34 @@
+% ======================================================================
+% 8. DETECTION  (budget: 1.5 pages)
+% Authority: every event ID mentioned must be confirmed against Microsoft docs.
+% ======================================================================
+\section{Detection}
+\label{sec:detection}
+
+\subsection{Host telemetry that matters}
+% TODO
+% - 4624 logon type 3/9 with NTLM as the authentication package, and the
+%   detail fields worth alerting on (workstation name vs source IP mismatch,
+%   logon without a preceding interactive session).
+% - 4672 special privileges assigned, following a type-3 logon.
+% - 4776 credential validation on the DC and how it differs from 4624.
+% - 4768/4769 for the PtK side, including cipher/etype fields.
+% - 4648 explicit credential use as a baseline comparator.
+
+\subsection{What the attack cannot hide}
+% TODO
+% - The target always logs a successful network logon; the DC always validates.
+%   The attacker controls neither. This is the structural weakness of PtH.
+% - Therefore detection is about baselining "who logs on where with NTLM",
+%   not about catching a signature.
+
+\subsection{Network-level signals}
+% TODO
+% - NTLMSSP in clear where the carrier is not encrypted; Negotiate downgrade.
+% - NTLM auditing on the DC as the cheapest visibility win.
+
+\subsection{Behavioural and deception controls}
+% TODO
+% - Honeytoken accounts / canary credentials in LSASS; any use is high signal.
+% - Baseline deviation: NTLM logon to a server that normally only does Kerberos.
+% - Short paragraph on EDR: what a memory read of LSASS looks like.

@@ -1,0 +1,19 @@
+% ======================================================================
+% ABSTRACT  (budget: 0.5 page)
+% Protocol | vulnerability class | what the PoC demonstrates | one result
+% Write this LAST.
+% ======================================================================
+\begin{abstract}
+\noindent
+% TODO: 180-220 words.
+% Required beats:
+%   1. Windows authenticates against key material, not against a password.
+%   2. NTLM and Kerberos both permit local completion of authentication.
+%   3. PtH and PtK therefore need no cracking and no replay.
+%   4. PoC: isolated lab, DC + client, hash acquired from LSASS, valid session
+%      obtained over SMB/WinRM and a TGT obtained with the same 16 bytes.
+%   5. Detection and the control that actually breaks the chain.
+%
+% \textbf{Keywords:} NTLM, Kerberos, pass-the-hash, credential theft,
+% lateral movement, Active Directory
+\end{abstract}
