@@ -76,12 +76,12 @@ supported encryption types and the domain policy inherited by accounts that set 
 
 \subsection{What PtK buys over PtH}
 
-Three gains follow that Chapter~\ref{sec:pth} cannot deliver. The first is reach into
+Three gains follow that Chapter~\ref{sec:pth} does not offer. The first is reach into
 estates that have removed NTLM and consider the problem closed. Restricting NTLM addresses
 the protocol that carries the hash in a Type~3 message; it does nothing to a KDC that
 still accepts RC4 pre-authentication for the same account. A domain with NTLM disabled and
-RC4 untouched is not hardened against this technique, and the two settings sit on
-different policy surfaces, argued from different premises.
+RC4 untouched is not hardened against this technique, because the two settings
+are decided separately and neither one implies the other.
 
 The second is access to services that refuse NTLM. A service ticket satisfies any service
 that accepts Kerberos and rejects NTLM, which includes hardened configurations and

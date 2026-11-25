@@ -12,8 +12,7 @@ protocol stays negotiable on every supported release, and the carriers are
 numerous: SMB, MSRPC, WinRM, LDAP, MSSQL, and HTTP through Negotiate
 \cite{ms-ntlm-overview}. An estate that has standardised on Kerberos for
 interactive logon still accepts NTLM from a machine account, an application
-service, or a legacy appliance, and each acceptance is another door with the
-same lock.
+service, or a legacy appliance.
 
 NTLMv2, the version still negotiated in practice, is not broken. A recorded
 exchange supports an offline attack against the response, and what such an
@@ -32,13 +31,11 @@ Kerberos does not close the gap. Active Directory still accepts RC4-HMAC
 tickets keyed by the NT hash itself, so an environment that has switched NTLM
 off by policy is not thereby protected \cite{ms-kile,ms-restrict-ntlm}.
 Multi-factor authentication at the perimeter covers the services that terminate
-it, not the file share that accepts a response from a workstation. The technique
-therefore matters most precisely while the protocol is still deployed, and in
-most estates the deployment outlasts the retirement notice by years.
+it, not the file share that accepts a response from a workstation.
 
-The economics explain the durability. A single workstation yields a key that is
-frequently valid on a neighbouring host, and using it requires no exploit, only
-a client willing to speak the protocol. Intrusions of this shape appear in the
+A single workstation yields a key that is frequently valid on a neighbouring
+host, and using it requires no exploit, only a client willing to speak the
+protocol. Intrusions of this shape appear in the
 later stages of major campaigns, where credential theft and exploitation are
 used together rather than one instead of the other \cite{uscert-ta17-181a}.
 Removing the compromised host from the network changes nothing about the key,
@@ -55,37 +52,35 @@ one way to obtain the key and, once the key is obtained, it stops being
 relevant. Transport encryption protects the exchange, not the copy at
 rest. Pass-the-hash and pass-the-key are not exploits in the ordinary sense;
 they are the protocols executed as specified, with a different source for the
-key, and a control that treats authentication as a password-checking problem
-addresses the wrong object.
+key.
 
 \subsection{Contributions}
 
 \begin{enumerate}[label=\arabic*.]
-\item \textbf{Where the key lives.} Chapters 2 and 3 establish that Windows
+\item \textbf{Where the key lives.} Chapters~\ref{sec:background} and~\ref{sec:framing} establish that Windows
   authority travels in the access token, that the same token can be produced
   from key material stored on the host, and that every pass-the-X technique is
   an instance of one property: the authenticator is whatever secret the
   protocol's proof can be computed from.
-\item \textbf{Why this is not replay.} Chapter 4 derives the response
+\item \textbf{Why this is not replay.} Chapter~\ref{sec:pth} derives the response
   computation and shows that replay protection cannot answer an attempt
   computed from the key, because each attempt is fresh and bound to the
   server's challenge. It also separates what SMB signing defends from
   what it does not.
-\item \textbf{A reproducible demonstration.} Chapters 6 and 7 present a
+\item \textbf{A reproducible demonstration.} Chapters~\ref{sec:poc} and~\ref{sec:results} present a
   three-host lab in which we demonstrate pass-the-hash over SMB and
   WinRM and pass-the-key to a TGT, with evidence captured on
   both ends of each connection. Success is recorded as a log line rather than
   asserted.
-\item \textbf{Controls measured, not listed.} Chapter 9 reports before-and-after
+\item \textbf{Controls measured, not listed.} Chapter~\ref{sec:mitigation} reports before-and-after
   outcomes for the controls that break the chain, including Credential Guard and
   the Protected Users group, and distinguishes those that change the evidence
   from those that only change a policy setting
-  \cite{ms-credential-guard,ms-protected-users}. Chapter 10 states the
+  \cite{ms-credential-guard,ms-protected-users}. Chapter~\ref{sec:synthesis} states the
   conditions under which attempts fail in practice.
 \end{enumerate}
 
-The lab definition, the scenario driver, and the captured output are kept in the
-accompanying repository.
+The lab definition and the captured output are in the accompanying repository.
 
 \subsection{Scope and non-goals}
 

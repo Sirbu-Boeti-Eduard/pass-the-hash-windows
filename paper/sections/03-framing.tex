@@ -1,8 +1,7 @@
 % ======================================================================
 % 3. FRAMING  (budget: 1.5 pages)
-% Job of the chapter: give the reader one mental model that makes PtH, PtK
-% (and the two out-of-scope variants) the same shape, then pin down exactly
-% what an attacker must already own.
+% Job of the chapter: give the reader one mental model that makes PtH and PtK
+% the same shape, then pin down exactly what an attacker must already own.
 % ======================================================================
 \section{Credential Material as a Bearer Capability}
 \label{sec:framing}
@@ -19,16 +18,16 @@ derivable secrets exist on a host and who can read them.
 A host may hold several such secrets at once. LSASS keeps the NT hash of every
 interactive logon, and the same hash sits in SAM for local accounts
 \cite{windows-internals}. Domain accounts additionally carry Kerberos keys: an RC4-HMAC key for
-etype 0x17 is the NT hash itself, while AES keys are derived from the plaintext .
+etype 0x17 is the NT hash itself, while AES keys are derived from the plaintext.
 Cached tickets hold session keys that are valid with no long-term secret at all \cite{rfc4120}.
-A certificate enrolled for the account, with its private key, is a fourth form of the
-same thing. Each material supports a technique that consumes it and nothing else: Pass-the-Hash
-for the NT hash \cite{mitre-t1550-002,ewaida-2010-pth}, Pass-the-Key for Kerberos keys, ticket
-abuse for session keys, certificate abuse for the key pair. None of these breaks a cipher. All
-four are possession arguments, which is why they share an ATT\&CK parent \cite{mitre-t1550}.
+A certificate enrolled for the account, with its private key, is a fourth form of the same
+thing. Each material supports a technique that consumes it and nothing else; this paper studies
+the two that consume the NT hash, over NTLM \cite{mitre-t1550-002,ewaida-2010-pth} and over
+Kerberos. None of them breaks a cipher. All of them are possession arguments, which is why
+\textsc{mitre} groups them under one parent technique \cite{mitre-t1550}.
 
 The shape of the defence follows from the same property. Either the material must not exist on
-the host, or it must be unusable once removed from it. Chapter 9 measures how far each family of
+the host, or it must be unusable once removed from it. Chapter~\ref{sec:mitigation} measures how far each family of
 controls gets toward one of those two conditions.
 
 \subsection{Threat model and preconditions}
@@ -49,7 +48,7 @@ mechanism; a host answering only Kerberos ends the attempt before a credential i
 \cite{ms-ntlm-overview,ms-nlmp}. The account behind the hash must be authorised on the target,
 through group memberships the target resolves into SID entries, since the target
 evaluates the request against its own access checks. The hash has to be in hand. Removing any
-single condition terminates the attack, and chapter 9 is organised around that fact: each control
+single condition terminates the attack, and chapter~\ref{sec:mitigation} is organised around that fact: each control
 deletes a condition rather than weakening the technique.
 
 \subsubsection{Lateral movement, not privilege escalation}
@@ -58,8 +57,7 @@ identity and group membership as it would for a legitimate logon, so the authori
 that account already held there. Nothing is escalated: a hash belonging to an unprivileged
 account buys an unprivileged logon. The logon is a network logon, logon type 3, and leaves no
 reusable credential behind. Each hop must therefore be justified by a new account's rights on
-the next host. An operator who holds one hash reaches one host's worth of resources and then has
-to find material on it.
+the next host.
 
 A local account complicates this in the way that accounts for most real failures of the
 technique. With UAC remote restrictions enabled, a remote logon by a local account receives a
@@ -88,8 +86,8 @@ Pass-the-Key & Kerberos long-term key: the NT hash for RC4-HMAC, or an AES key r
 \end{tabular}
 \end{table}
 
-The table is short because the property behind it is general. Every authenticator of this shape,
-a secret from which the protocol's proof can be recomputed, admits a technique that consumes it
-and nothing else; the two rows are instances rather than an inventory. What distinguishes them is
-which protocol will accept the material in hand, and that is a question of configuration rather
-than of cryptography.
+Table~\ref{tab:taxonomy} is short because the property behind it is general. Every authenticator
+of this shape, a secret from which the protocol's proof can be recomputed, admits a technique that
+consumes it; the two rows are instances rather than an inventory. What separates them is which
+protocol accepts the material in hand, which is a question of configuration rather than of
+cryptography.

@@ -1,45 +1,39 @@
-% Figure: one account record, and the SID it carries.
+% Figure: one account record, and its SID read left to right.
 % Used in section 2.1. Values are illustrative, not taken from a real host.
+% Deliberately plain tabulars: they align exactly and match the record they sit under.
 \begin{figure}[htbp]
 \centering
+\footnotesize
+\setlength{\fboxsep}{6pt}%
+\fbox{\begin{tabular}{@{}l@{\hspace{1.6em}}l@{}}
+  \multicolumn{2}{@{}l}{\normalsize\textbf{one account record}}\\[3pt]
+  \texttt{sAMAccountName}     & \texttt{j.smith}\\
+  \texttt{objectSID}          & \texttt{S-1-5-21-1482-1692-3301-1105}\\
+  \texttt{userAccountControl} & \texttt{0x10200}\\
+  \texttt{pwdLastSet}         & \texttt{2026-09-14}\\
+  \texttt{NT hash}            & \texttt{2b57 6acb e6bc fda7 294d 6bd1 8041 b8fe}\\
+  \texttt{LM hash}            & \texttt{absent}
+\end{tabular}}
+
+\par\vspace{0.9em}
+{\scriptsize\itshape the same record's objectSID, read left to right}
+\par\vspace{0.4em}
 \small
-\begin{tikzpicture}[
-  record/.style={draw=black!45, rounded corners=2pt, fill=black!2, inner sep=7pt},
-  chip/.style={draw=black!45, rounded corners=3pt, inner sep=5pt, align=center,
-               minimum height=1.5cm, text width=3.15cm},
-  lbl/.style={font=\footnotesize\itshape, text=black!55}
-]
+\begin{tabular}{@{}l@{\hspace{2em}}l@{}}
+  \toprule
+  \texttt{S-1-5}             & authority: revision 1, NT (5) \\
+  \texttt{-21}               & type: a domain identifier \\
+  \texttt{-1482-1692-3301}   & the domain itself \\
+  \texttt{-1105}             & RID: the account \\
+  \bottomrule
+\end{tabular}
 
-% ---- the record -------------------------------------------------------
-\node[record, anchor=north west] (rec) at (0,0) {%
-  \begin{tabular}{@{}l@{\hspace{1.6em}}l@{}}
-    \multicolumn{2}{@{}l}{\textbf{account record} --- one entry per account, stored in
-      \texttt{SAM} locally and in \texttt{NTDS.dit} on a domain controller}\\[4pt]
-    \texttt{sAMAccountName}    & \texttt{j.smith}\\
-    \texttt{objectSID}         & \texttt{S-1-5-21-1482-1692-3301-1105}\\
-    \texttt{userAccountControl}& \texttt{0x10200}\quad(normal account, password never expires)\\
-    \texttt{pwdLastSet}        & \texttt{2026-09-14 09:21}\\
-    \texttt{NT hash}           & \texttt{2b57 6acb e6bc fda7 294d 6bd1 8041 b8fe}\\
-    \texttt{LM hash}           & \texttt{(absent on current systems)}
-  \end{tabular}};
+\par\vspace{0.5em}
+{\scriptsize\itshape Only the RID distinguishes accounts: 500 is the built-in Administrator,
+501 the guest, later accounts start at 1000.}
 
-% ---- the SID, decomposed ---------------------------------------------
-\node[lbl, anchor=north west] (sidlbl) at ([yshift=-1.1cm]rec.south west)
-  {the same record's \texttt{objectSID}, read left to right};
-
-\node[chip, anchor=north west] (c1) at ([yshift=-0.35cm]sidlbl.south west)
-  {\texttt{S-1-5}\\[2pt]{\footnotesize revision 1,\\authority 5 (NT)}};
-\node[chip, anchor=north west] (c2) at ([xshift=0.25cm]c1.north east)
-  {\texttt{21}\\[2pt]{\footnotesize domain\\identifier type}};
-\node[chip, anchor=north west] (c3) at ([xshift=0.25cm]c2.north east)
-  {\texttt{1482-1692-3301}\\[2pt]{\footnotesize the domain itself:\\identical on every\\account in it}};
-\node[chip, anchor=north west] (c4) at ([xshift=0.25cm]c3.north east)
-  {\texttt{1105}\\[2pt]{\footnotesize RID: unique per account.\\500 is the built-in\\Administrator}};
-
-\end{tikzpicture}
-\caption{One account record. The name is how a human refers to the account; the SID is what
-every access check uses, and the RID at its right-hand end is the only part that differs
-between accounts in the same domain. The NT hash sits in the same record and is the field
-later chapters consume.}
+\caption{One account record, and the identifier it carries. The name is how people refer to the
+account; the SID is what every access check uses, and its last group is the only part that
+differs between accounts of the same domain.}
 \label{fig:sam-record}
 \end{figure}

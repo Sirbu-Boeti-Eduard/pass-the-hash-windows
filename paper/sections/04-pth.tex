@@ -36,19 +36,19 @@ missing salt makes it cheap, but the hash here is used, not reversed.
 The value belongs to an account, not a machine. A local account's hash is
 authoritative only where that SAM is (Section~\ref{sec:framing}); a
 domain account's works wherever the domain is trusted, within the rights it
-carries. Sixteen unmarked bytes also travel into dumps, output, and shared
-notes, with nothing to say one belongs to a domain administrator.
+carries. Sixteen unmarked bytes also travel into dumps and shared notes, with
+nothing attached to say which account they belong to.
 
 \subsection{Computing a valid response without the password}
 \subsubsection{The derivation, step by step}
 
-Five values make up an NTLMv2 exchange. Only one of them needs anything secret, and the table
-below names them in the order they are built.
+Five values make up an NTLMv2 exchange, and only one of them needs anything secret.
+Table~\ref{tab:ntlmv2} names them in the order they are built.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\renewcommand{\arraystretch}{1.12}
+\renewcommand{\arraystretch}{1.28}
 \caption{The five values of an NTLMv2 exchange, in construction order.}
 \label{tab:ntlmv2}
 \begin{tabularx}{\textwidth}{@{}L{2.6cm}L{8.6cm}Y@{}}
@@ -58,7 +58,7 @@ Value & Built from & Supplied by \\
 Response key &
 HMAC-MD5 of the NT hash, over the uppercased account name followed by the domain, both
 UTF-16LE, no separator &
-nothing at run time: fixed for the account \\
+derived once; fixed for the account \\
 Temp block &
 two version bytes (\texttt{0x01} \texttt{0x01}), six zero bytes, an 8-byte timestamp, the
 client challenge, four zero bytes, the server's target information, four zero bytes &
@@ -75,27 +75,20 @@ connection \\
 \end{tabularx}
 \end{table}
 
-The response key is where the hash enters. It is an HMAC of the hash taken over the account name
-and the domain rather than the hash used bare, so a hash from one domain does not key a proof for
-the same name in another. Uppercasing is part of the definition: a proof built without it is
-rejected. No server input enters this step, which is why it can be computed before a packet
-leaves the host, and why it stays computable for as long as the account exists.
+Two details in that table carry the argument that follows. The response key is not the hash
+used directly: the hash is the HMAC key and the message is the account name followed by the
+domain, which binds the result to one domain, and the uppercasing is part of the definition
+rather than a convention. The temp block, by contrast, belongs almost entirely to the client:
+the version bytes, the timestamp, the challenge, the zero padding. Only the target information
+comes from the server, and it is copied rather than chosen.
 
-The temp block is the client's answer to the server's challenge, and almost all of it is the
-client's own choice. It carries the version bytes, a timestamp, a client challenge, and the
-target information block that arrived in the Type~2 message. Only that last field comes from the
-server, and even it is copied rather than chosen. Everything else is new on every attempt.
-
-The proof is the one value the server tests: an HMAC of the response key over the server's
-challenge followed by the temp block. The response that travels is the proof followed by the
-block, so the server can rebuild exactly what was signed. The session base key is a second HMAC
-over the proof alone, and every key protecting the resulting connection descends from it.
-
-Verification is the same arithmetic seen from the other side. The server, or a domain controller
-acting for it, looks up the account's hash, rebuilds the response key, rebuilds the block,
-recomputes the proof and compares. The verifier holds the same secret as the client and performs
-the same operations, which is the design: NTLM demonstrates only that both parties can compute
-with a shared key.
+The proof is therefore different on every attempt and tied to that server's challenge. The last
+row of the table is what Section~\ref{sec:signing} needs: the session base key is the value
+every key protecting the connection descends from. Verification runs the same arithmetic from the
+other side, and the server reaches the same conclusion the client started from. It looks up the
+account's hash, rebuilds the response key, rebuilds the block, recomputes the proof and compares.
+Verifier and client hold one secret and perform one computation, which is the design of the
+protocol: NTLM establishes that both parties can compute with a shared key, and nothing else.
 
 \subsubsection{Why this is not replay}
 
@@ -137,7 +130,7 @@ that ordering is the substance of the difference. The session
 created there is local and, in the usual construction, type~9, the same shape as
 \texttt{runas /netonly}; only later connections produce type~3 events elsewhere.
 
-The footprints diverge. The first way leaves an inbound type~3 logon on the
+The two leave different footprints. The first way leaves an inbound type~3 logon on the
 target, paired with a credential validation on the domain controller; the second
 leaves no inbound authentication on the machine holding the material, which
 becomes a second credential store, so the pivot is also a new extraction site.
@@ -146,6 +139,7 @@ Section~\ref{sec:results} exercises the two separately, and
 Figure~\ref{fig:locality} marks what crosses the wire.
 
 \subsection{Consequences for signing and sealing}
+\label{sec:signing}
 
 SMB signing covers each message with a key derived from the session key, so the question is
 whether a hash holder can reach that key \cite{ms-smb2}. The chain is short: the session base
