@@ -47,7 +47,7 @@ The NT hash is the MD4 digest of the password encoded as UTF-16LE, computed in a
 
 Calling this a hashed password invites the wrong model. A password hash in a well-built store is an artefact designed to be slow to attack and useless as a credential; the NT hash is designed to be fast, because every logon recomputes it, and two protocols consume it directly as a key. With no per-host key, version identifier or parameter set, there is no key management at all.
 
-The LM hash is a separate and older construction. It uppercases the password, truncates to fourteen characters, splits the result into two seven-byte halves and encrypts a fixed string with each half as a DES key. It is absent by default on current systems; when present it is a second, weaker value in the same record, not another encoding of the NT hash.
+The LM hash is a separate and older construction. It uppercases the password, truncates to fourteen characters, splits the result into two seven-byte halves and encrypts a fixed string with each half as a DES key. It is absent by default on current systems; when present it is a second, weaker value in the same record, not another encoding of the NT hash. Figure~\ref{fig:lm-nt} puts the two paths side by side.
 
 \subsubsection{The derivation tree}
 
