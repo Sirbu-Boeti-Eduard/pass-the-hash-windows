@@ -97,22 +97,22 @@ Every protocol below carries authentication as an opaque token negotiated during
 \begin{table}[htbp]
 \centering
 \small
-\begin{tabular}{@{}p{3.3cm}p{3.6cm}p{2.3cm}p{4.3cm}@{}}
-\toprule
-Protocol & Default mechanism & Accepts NTLM & Can be restricted \\
-\midrule
-SMB & Negotiate & Yes & Yes, by policy \\
-MSRPC endpoint mapper & NTLM & Yes & Partly \\
-WinRM & Negotiate & Yes & Partly \\
-WMI/DCOM & NTLM & Yes & Partly \\
-RDP & Negotiate (NLA) & Yes & Partly \\
-LDAP & Negotiate & Yes & Partly \\
-MSSQL & NTLM & Yes & No server switch \\
-HTTP & Negotiate & Yes & Per application \\
-\bottomrule
-\end{tabular}
 \caption{Authentication carriage by protocol. The last column distinguishes services with a switch of their own from those that depend on host-wide policy.}
 \label{tab:carriers}
+\begin{tabular}{@{}L{4.3cm}L{3.4cm}L{3.0cm}L{4.0cm}@{}}
+\toprule
+Protocol & Default mechanism & NTLM accepted & Can be restricted \\
+\midrule
+SMB & \texttt{Negotiate} & Yes & Yes, by policy \\
+MSRPC endpoint mapper & NTLM & Yes & Partly \\
+WinRM & \texttt{Negotiate} & Yes & Partly \\
+WMI/DCOM & NTLM & Yes & Partly \\
+RDP & \texttt{Negotiate} (NLA) & Yes & Partly \\
+LDAP & \texttt{Negotiate} & Yes & Partly \\
+MSSQL & NTLM & Yes & No server switch \\
+HTTP & \texttt{Negotiate} & Yes & Per application \\
+\bottomrule
+\end{tabular}
 \end{table}
 
 The last column is coarser than it looks. Restricting NTLM is largely a host-wide policy decision covering outbound use and, in its blocking form, inbound acceptance; only some services expose a switch of their own~\cite{ms-ntlm-overview}. A partly restrictable service therefore depends on a decision that applies to the whole host, so every legacy application there loses NTLM too.

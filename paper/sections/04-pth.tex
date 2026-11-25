@@ -221,53 +221,43 @@ of NTLM as a mechanism, is a common control point
 
 Table~\ref{tab:tooling} maps capability to implementation rather than ranking
 tools. The last column records what each supplies that the others cannot, since
-an engagement needs most of them in sequence. Ordering follows an operation, not
-a tool.
+an engagement needs most of them in sequence, and the rows follow the order an
+operation uses them rather than any ranking.
 
 \begin{table}[htbp]
 \centering
 \small
-\setlength{\tabcolsep}{4pt}
 \caption{Capabilities for carrying a hash to a session, and what each adds.}
 \label{tab:tooling}
-\begin{tabular}{@{}p{2.7cm}p{3.4cm}p{3.9cm}p{4.2cm}@{}}
+\begin{tabularx}{\textwidth}{@{}L{4.3cm}L{6.4cm}Y@{}}
 \toprule
-Capability & Implementation & What it provides & What it adds \\
+Capability & Implementation & What it adds \\
 \midrule
 Read hashes from live memory &
 \texttt{mimikatz} \texttt{sekurlsa::msv} \cite{deply-mimikatz} &
-NT hash and RC4 key from live sessions &
-No reboot; needs administrator \\
-Read hashes from disk &
+No reboot; needs administrator or SYSTEM \\
+Read hashes from a disk image &
 \texttt{mimikatz} \texttt{lsadump::sam}, or \texttt{impacket}
 \texttt{secretsdump} against the files \cite{fortra-impacket} &
-Local hashes from SAM and SECURITY &
-Backup or stolen disk; no host execution \\
+Local accounts only; no code execution on the host \\
 NTLM client, SMB &
-\texttt{impacket} \texttt{smbclient}, \texttt{smbexec}, \texttt{atexec}
-\cite{fortra-impacket} &
-Type~3 logon, file and pipe access &
-Field control; runs on any Python host \\
+\texttt{impacket} \texttt{smbclient}, \texttt{smbexec}, \texttt{atexec} \cite{fortra-impacket} &
+Type~3 logon with field control; runs on any Python host \\
 NTLM client, WinRM &
 \texttt{netexec} \texttt{winrm} \cite{netexec} &
-Execution on 5985, no share &
-Reaches hosts where 445 is filtered \\
+Execution on 5985, with no share required \\
 NTLM client, RPC &
-\texttt{impacket} \texttt{wmiexec}, \texttt{dcomexec}; \texttt{netexec}
-\texttt{wmi} &
-Process creation over 135 and the dynamic range &
-No share, no service, no file \\
+\texttt{impacket} \texttt{wmiexec}, \texttt{dcomexec}; \texttt{netexec} \texttt{wmi} &
+Process creation with no share, service or file \\
 RDP, restricted admin &
-\texttt{mstsc /restrictedAdmin}, launched from a session whose credentials were
-injected by \texttt{mimikatz} \texttt{sekurlsa::pth} &
-Desktop with nothing cached on the target &
+\texttt{mstsc /restrictedAdmin}, launched from a session seeded by
+\texttt{mimikatz} \texttt{sekurlsa::pth} &
 The only carrier that keeps the hash client-side \\
 Orchestration &
 \texttt{netexec} \cite{netexec} &
-Protocol fan-out across a host range &
 One coverage map across all carriers \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 The accompanying repository sits in the last row and nowhere else: it

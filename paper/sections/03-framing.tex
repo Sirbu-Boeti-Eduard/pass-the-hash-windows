@@ -76,7 +76,9 @@ customary exception.
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{@{}lll@{}}
+\caption{The four variants, ordered by material consumed.}
+\label{tab:taxonomy}
+\begin{tabular}{@{}L{4.4cm}L{7.0cm}L{3.4cm}@{}}
 \toprule
 Technique & Material consumed & Protocol family \\
 \midrule
@@ -86,8 +88,6 @@ Ticket abuse (out of scope) & TGT or service ticket and its session key & Kerber
 Certificate abuse (out of scope) & Enrolled certificate and private key & PKINIT, TLS \\
 \bottomrule
 \end{tabular}
-\caption{The four variants, ordered by material consumed.}
-\label{tab:taxonomy}
 \end{table}
 
 The techniques differ in what they consume and which protocol accepts it, not in mechanism.

@@ -28,3 +28,6 @@ poc/evidence/**/*.evtx
 poc/**/secrets.local.*
 poc/**/*.kirbi
 poc/**/*.pfx
+
+# local preview build (see build.sh)
+build/

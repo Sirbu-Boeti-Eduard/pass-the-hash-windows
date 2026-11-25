@@ -23,6 +23,7 @@
 \usepackage[a4paper,margin=2.6cm,headheight=14pt]{geometry}
 \usepackage{parskip}
 \setlength{\parskip}{0.5em}
+\setlength{\emergencystretch}{2em}
 
 % ---------- structure ----------
 \usepackage{titlesec}
@@ -34,8 +35,12 @@
 % ---------- floats, tables, figures ----------
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
 \usepackage{subcaption}
 \usepackage{float}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \usepackage{enumitem}
 \setlist{itemsep=2pt,topsep=3pt}
 \graphicspath{{figures/}}
@@ -77,7 +82,8 @@
 
 % ---------- title ----------
 \title{\bfseries Windows Credential Reuse:\\[0.3em]
-       Pass-the-Hash and Pass-the-Key against NTLM and Kerberos}
+       Pass-the-Hash and Pass-the-Key\\[0.15em]
+       against NTLM and Kerberos}
 \author{Author One \and Author Two\\[0.4em]
         \small Security Protocols --- MSc}
 \date{\today}
