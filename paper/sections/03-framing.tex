@@ -76,7 +76,7 @@ customary exception.
 \begin{table}[h]
 \centering
 \small
-\caption{The four variants, ordered by material consumed.}
+\caption{The two techniques studied, by the material each consumes.}
 \label{tab:taxonomy}
 \begin{tabular}{@{}L{4.4cm}L{7.0cm}L{3.4cm}@{}}
 \toprule
@@ -84,14 +84,12 @@ Technique & Material consumed & Protocol family \\
 \midrule
 Pass-the-Hash & NT hash & NTLM \\
 Pass-the-Key & Kerberos long-term key: the NT hash for RC4-HMAC, or an AES key read from the host & Kerberos \\
-Ticket abuse (out of scope) & TGT or service ticket and its session key & Kerberos \\
-Certificate abuse (out of scope) & Enrolled certificate and private key & PKINIT, TLS \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The techniques differ in what they consume and which protocol accepts it, not in mechanism.
-Ticket abuse and certificate abuse are excluded from the practical work because they need a
-different lab: the first depends on ticket lifecycle, the second on certificate-services
-misconfiguration. Both rest on the property established above, and chapter 10 returns to the
-conditions under which each is worth attempting.
+The table is short because the property behind it is general. Every authenticator of this shape,
+a secret from which the protocol's proof can be recomputed, admits a technique that consumes it
+and nothing else; the two rows are instances rather than an inventory. What distinguishes them is
+which protocol will accept the material in hand, and that is a question of configuration rather
+than of cryptography.

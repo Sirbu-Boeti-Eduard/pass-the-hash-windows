@@ -15,8 +15,7 @@ cryptographic break is needed to defeat either protocol. An NT hash is not a sto
 waiting to be cracked; it is a key, and possession of it is possession of the account.
 
 The work covers Pass-the-Hash as the core case and Pass-the-Key as its Kerberos counterpart, since
-both consume the same sixteen bytes. Ticket and certificate abuse rest on the same property and
-are discussed as adjacent work rather than implemented.
+both consume the same sixteen bytes.
 
 The essay develops the subject from first principles — accounts and tokens, where Windows stores
 secrets, how a password becomes a key, how NTLM proves possession of that key over the wire, how

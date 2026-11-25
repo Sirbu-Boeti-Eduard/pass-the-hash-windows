@@ -15,7 +15,9 @@ which kind of logon leaves material behind on the host.
 
 \subsection{Accounts, SIDs and the access token}
 
-Two account databases matter. The SAM file on every workstation and member server holds local accounts; on a domain controller, the domain database in \texttt{NTDS.dit} sits beside it. Both name an account by a security identifier, a domain or machine SID together with a relative identifier, and the identifier rather than the name is what every later decision uses.
+Two account databases matter. The SAM file on every workstation and member server holds local accounts; on a domain controller, the domain database in \texttt{NTDS.dit} sits beside it. Both name an account by a security identifier, a domain or machine SID together with a relative identifier, and the identifier rather than the name is what every later decision uses. Figure~\ref{fig:sam-record} shows one record and decomposes the identifier it carries.
+
+\input{figures/fig-sam-record}
 
 A successful logon produces an access token, and the token is the object that authority travels in. It records the user SID, the group SIDs, the privileges held, the logon SID, the logon type, the integrity level and the session identifier. The security reference monitor attaches it to a process or impersonation thread, and each access check compares it against the security descriptor of the object being opened. No check returns to the credential store; the password is not consulted again while the token lives.
 
@@ -30,6 +32,10 @@ Because the token records identity and authorisation data rather than the method
 \subsubsection{Local and domain stores}
 
 The stores differ in content and in whether that content serves as an authenticator. The SAM hive holds local account records, each with an NT hash and, where a legacy value survives, an LM hash; it is readable offline from the registry files or a volume shadow copy by an administrator, and the hashes are directly usable. The SECURITY hive holds LSA secrets: the machine account password, service account passwords retained for start-up, and the DPAPI system master keys. Its contents are often plaintext or reversibly protected, so it yields credentials rather than hashes. On a domain controller, \texttt{NTDS.dit} holds the domain accounts and their NT hashes, the densest source in an estate. DPAPI protects application secrets with master keys derived from the password; the system master keys in the SECURITY hive protect the user keys. It protects data at rest and produces nothing an authentication protocol accepts, so a master key is a target in its own right, not pass-the-hash material.
+
+The two values in a local record are unrelated, and the difference is worth seeing once. Figure~\ref{fig:lm-nt} sends the same password down both paths: the NT hash over the password as typed, the LM hash over an uppercased, truncated copy of it.
+
+\input{figures/fig-lm-nt}
 
 Cached domain credentials occupy a separate store and are widely misread. When a user logs on while the domain controller is unreachable, the logon is verified against a cached verifier: the password hashed with the account name as salt and iterated many times, held as MSCache v2 data. Salt and iteration make the value expensive to attack and useless for another account. A cached credential cannot be turned into an NT hash, cannot key an NTLM response, and is not a source of material for the techniques in chapter 4. WDigest is the historical case: for a period it retained the plaintext password in \texttt{lsass.exe} alongside the hash, so memory acquisition yielded the password; Windows 8.1 and Windows Server 2012 R2 and later disable that retention by default, through a registry value that one legacy domain policy can restore on every host that applies it \cite{ms-advisory-2871997}.
 
@@ -80,6 +86,10 @@ After verification the session key is \texttt{SessionBaseKey}, or the result of 
 
 Kerberos in Active Directory follows RFC~4120~\cite{rfc4120} with the extensions in~\cite{ms-kile}. The client sends an \texttt{AS-REQ} to the key distribution centre, which on a domain controller is hosted by the krbtgt account. \texttt{AS-REP} returns a ticket-granting ticket encrypted under the krbtgt key and a session key for client and KDC encrypted under the client's long-term key. A \texttt{TGS-REQ} presents the ticket and an authenticator; \texttt{TGS-REP} returns a service ticket encrypted under the service account's long-term key, with a fresh session key.
 
+Four messages, four different keys, and prose makes it easy to lose track of which is which. Figure~\ref{fig:kerberos-flow} reduces the exchange to four arrows and states the key protecting each one.
+
+\input{figures/fig-kerberos-flow}
+
 The addition that makes AD Kerberos more than RFC~4120 is the \emph{privilege attribute certificate}. The PAC carries the user's SID, group memberships and logon hours inside the ticket and is signed by the KDC, so a service trusts it without querying a directory. RFC~4120 leaves authorisation to the service; the PAC moves it into the ticket~\cite{ms-kile}.
 
 \subsubsection{Pre-authentication}
@@ -88,11 +98,24 @@ Before issuing a ticket-granting ticket, the KDC usually requires proof that the
 
 \subsubsection{Encryption types and what keys them}
 
-Kerberos names its algorithms by encryption type. For RC4-HMAC, etype \texttt{0x17}, the long-term key is the NT hash itself, with no derivation between the two values. For AES128-CTS-HMAC-SHA1-96 and AES256-CTS-HMAC-SHA1-96, etypes \texttt{0x11} and \texttt{0x12}, the key is derived from the plaintext password through a salted string-to-key function, and the NT hash plays no part. The consequence is plain and chapter 5 develops it: the sixteen bytes that satisfy NTLM also satisfy RC4 pre-authentication and do not satisfy AES. A domain that refuses RC4 removes the Kerberos path from a hash holder while NTLM remains wherever it is accepted. Figure~\ref{fig:kerberos-flow} shows the flow with the keys protecting each leg.
+Kerberos names its algorithms by encryption type. For RC4-HMAC, etype \texttt{0x17}, the long-term key is the NT hash itself, with no derivation between the two values. For AES128-CTS-HMAC-SHA1-96 and AES256-CTS-HMAC-SHA1-96, etypes \texttt{0x11} and \texttt{0x12}, the key is derived from the plaintext password through a salted string-to-key function, and the NT hash plays no part. The consequence is plain and chapter 5 develops it: the sixteen bytes that satisfy NTLM also satisfy RC4 pre-authentication and do not satisfy AES. A domain that refuses RC4 removes the Kerberos path from a hash holder while NTLM remains wherever it is accepted. Figure~\ref{fig:kerberos-flow} marks which key protects each leg of that path.
 
 \subsection{Which protocols carry which authentication}
 
-Every protocol below carries authentication as an opaque token negotiated during its own connection setup, and most use SPNEGO, which prefers Kerberos and falls back to NTLM when no service ticket is available~\cite{ms-ntlm-overview}. The fallback is a policy property of the host, not of the transport, which is how one service is Kerberos-only in one estate and NTLM-accepting in another. Table~\ref{tab:carriers} records the default and whether a restriction exists.
+Windows has no single remote-access protocol; it has several, and the overlap between them is the result of accretion rather than of a plan. Each was built for a different job and arrived with its own transport:
+
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{SMB} shares files and printers. It is the oldest of the group, predates the domain, and carries named pipes as well as file access, which is why administrative tooling has always been able to reach a machine through it.
+\item \textbf{MSRPC} calls procedures on another machine as though they were local. It is the generic remote-execution substrate underneath a great deal of Windows itself, listening on the endpoint mapper at 135 and then a negotiated dynamic port.
+\item \textbf{WMI} is an instrumentation model for querying and changing the operating system, exposed through the same DCOM and RPC machinery. It is what a management console talks to when it asks a host what is installed or starts a process on it.
+\item \textbf{WinRM} carries management requests as HTTP, on 5985 or 5986. It exists because firewalls permit those ports and do not permit RPC's dynamic range, so it reaches hosts that RPC cannot.
+\item \textbf{RDP} carries an interactive session with a desktop in it, and is the only one of the six that a person sits in front of.
+\item \textbf{LDAP} asks a directory questions. On a domain it is the main read path to the domain database, and on a domain controller it is the same data the KDC reads.
+\end{itemize}
+
+The overlap is the point. A file can be written over SMB, a process started over MSRPC or WMI, a command run over WinRM, and a desktop opened over RDP, and each of those is a small fraction of what the protocol can do. Where one path is filtered, another usually survives; choosing between them changes the preconditions and the logs, not the outcome.
+
+What all six share is the authentication layer. None of them implements its own credential check. Each negotiates authentication as an opaque token during its own connection setup, and most use SPNEGO, which prefers Kerberos and falls back to NTLM when no service ticket is available~\cite{ms-ntlm-overview}. The fallback is a policy property of the host, not of the transport, which is how one service is Kerberos-only in one estate and NTLM-accepting in another. Table~\ref{tab:carriers} records the default and whether a restriction exists.
 
 \begin{table}[htbp]
 \centering

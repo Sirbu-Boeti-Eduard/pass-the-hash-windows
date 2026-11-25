@@ -42,62 +42,71 @@ notes, with nothing to say one belongs to a domain administrator.
 \subsection{Computing a valid response without the password}
 \subsubsection{The derivation, step by step}
 
-Write $H$ for the NT hash, $U$ and $D$ for account name and domain, $C_s$ for
-the eight-byte server challenge, $C_c$ for the client's, $T$ for the client
-timestamp, and $I$ for the target information block echoed from the Type~2
-message. Three HMACs and two concatenations complete the proof, and nothing
-else in it is secret. Only the first line can be computed before a packet is
-sent; the rest bind it to the exchange.
+Five values make up an NTLMv2 exchange. Only one of them needs anything secret, and the table
+below names them in the order they are built.
 
-\[
-\begin{array}{rcl}
-\mathit{RK} &=& \mathrm{HMAC}\mbox{-}\mathrm{MD5}\bigl(H,\
-  \mathrm{UTF16}(\mathrm{upper}(U)\,\|\,D)\bigr)\\[2pt]
-\mathit{temp} &=& 01\,\|\,01\,\|\,00^{6}\,\|\,T\,\|\,C_c\,\|\,00^{4}\,\|\,
-  I\,\|\,00^{4}\\[2pt]
-\mathit{NTProofStr} &=& \mathrm{HMAC}\mbox{-}\mathrm{MD5}\bigl(\mathit{RK},\
-  C_s\,\|\,\mathit{temp}\bigr)\\[2pt]
-\mathit{resp} &=& \mathit{NTProofStr}\,\|\,\mathit{temp}\\[2pt]
-\mathit{SBK} &=& \mathrm{HMAC}\mbox{-}\mathrm{MD5}\bigl(\mathit{RK},\
-  \mathit{NTProofStr}\bigr)
-\end{array}
-\]
+\begin{table}[htbp]
+\centering
+\small
+\renewcommand{\arraystretch}{1.12}
+\caption{The five values of an NTLMv2 exchange, in construction order.}
+\label{tab:ntlmv2}
+\begin{tabularx}{\textwidth}{@{}L{2.6cm}L{8.6cm}Y@{}}
+\toprule
+Value & Built from & Supplied by \\
+\midrule
+Response key &
+HMAC-MD5 of the NT hash, over the uppercased account name followed by the domain, both
+UTF-16LE, no separator &
+nothing at run time: fixed for the account \\
+Temp block &
+two version bytes (\texttt{0x01} \texttt{0x01}), six zero bytes, an 8-byte timestamp, the
+client challenge, four zero bytes, the server's target information, four zero bytes &
+the client, except the target information, which is echoed \\
+Proof (\texttt{NTProofStr}) &
+HMAC-MD5 of the response key, over the server challenge followed by the temp block &
+computed at run time, per attempt \\
+Response &
+the proof followed by the temp block & what crosses the wire \\
+Session base key &
+HMAC-MD5 of the response key, over the proof alone & roots every key that protects the
+connection \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-The response key $\mathit{RK}$ takes the hash as key and the uppercased account
-name followed by the domain as message, both UTF-16LE, with no separator between
-them. Uppercasing is part of the definition; omitting it produces a proof the
-server rejects. No server input enters this step, so it can be computed before a
-packet leaves the attacker's host.
+The response key is where the hash enters. It is an HMAC of the hash taken over the account name
+and the domain rather than the hash used bare, so a hash from one domain does not key a proof for
+the same name in another. Uppercasing is part of the definition: a proof built without it is
+rejected. No server input enters this step, which is why it can be computed before a packet
+leaves the host, and why it stays computable for as long as the account exists.
 
-$\mathit{temp}$ is the client's. The response version byte and its high byte,
-both $01$, come first; six zero bytes follow; then the 64-bit \texttt{FILETIME}
-timestamp, the client challenge, four more zero bytes, the target information
-block copied verbatim from the Type~2 message, and four final zero bytes. Only
-$I$ originates with the server, and even that is echoed rather than chosen.
+The temp block is the client's answer to the server's challenge, and almost all of it is the
+client's own choice. It carries the version bytes, a timestamp, a client challenge, and the
+target information block that arrived in the Type~2 message. Only that last field comes from the
+server, and even it is copied rather than chosen. Everything else is new on every attempt.
 
-$\mathit{NTProofStr}$ is the HMAC of the server challenge concatenated with
-$\mathit{temp}$ under $\mathit{RK}$, and it is what the server checks. The
-NTLMv2 response is that proof followed by $\mathit{temp}$. $\mathit{SBK}$, the
-session base key, hashes the proof under the same key and roots the session
-material; with key exchange, the exported session key is the RC4 decryption of
-\texttt{EncryptedRandomSessionKey} under $\mathit{SBK}$. Verification is the
-same arithmetic in reverse: the server, or a domain
-controller acting for it, looks up the account's hash, recomputes
-$\mathit{RK}$, rebuilds $\mathit{temp}$, and compares the proof
-\cite{ms-nlmp}. The verifier holds the same secret as the client, and that
-symmetry is the design: NTLM demonstrates only that both parties can
-compute with a shared key.
+The proof is the one value the server tests: an HMAC of the response key over the server's
+challenge followed by the temp block. The response that travels is the proof followed by the
+block, so the server can rebuild exactly what was signed. The session base key is a second HMAC
+over the proof alone, and every key protecting the resulting connection descends from it.
+
+Verification is the same arithmetic seen from the other side. The server, or a domain controller
+acting for it, looks up the account's hash, rebuilds the response key, rebuilds the block,
+recomputes the proof and compares. The verifier holds the same secret as the client and performs
+the same operations, which is the design: NTLM demonstrates only that both parties can compute
+with a shared key.
 
 \subsubsection{Why this is not replay}
 
 Take a complete Type~3 message from a capture and try to reuse it. Against
-another host it fails because the new server issues its own $C_s$ and the proof
-was bound to the old one, so the HMAC input differs in its first eight bytes. Against the same host it fails identically: each
+another host it fails because the new server issues its own challenge and the proof
+was computed over the old one, so the first thing the HMAC covers is already different. Against the same host it fails identically: each
 Type~2 carries a fresh challenge, and the timestamp is checked against a
 clock-skew window.
 
 What the server learns is one thing: the sender could compute
-$\mathit{NTProofStr}$ under $\mathit{RK}$. It cannot learn whether that party
+the proof under the response key. It cannot learn whether that party
 typed the password a minute ago or read the hash last week, because both run the
 identical computation. The logon that results is not a protocol anomaly, and
 inspection will not make it one. Implementations differ in incidentals such as
@@ -139,10 +148,11 @@ Figure~\ref{fig:locality} marks what crosses the wire.
 \subsection{Consequences for signing and sealing}
 
 SMB signing covers each message with a key derived from the session key, so the question is
-whether a hash holder can reach that key \cite{ms-smb2}. $\mathit{SBK}$ is the HMAC of
-$\mathit{NTProofStr}$ under $\mathit{RK}$; the exported session key is either that value or, with
-key exchange, its RC4 decryption of \texttt{EncryptedRandomSessionKey}; $\mathit{RK}$ is an HMAC
-under the NT hash. An attacker holding $H$ who observes one exchange recomputes every link.
+whether a hash holder can reach that key \cite{ms-smb2}. The chain is short: the session base
+key is an HMAC over the proof, keyed with the response key; the exported session key is either
+that value or, with key exchange, its RC4 decryption of
+\texttt{EncryptedRandomSessionKey}; and the response key is an HMAC keyed with the NT hash. An
+attacker holding the hash recomputes every link, starting from the proof.
 
 No step asks for the password. Signing guarantees a message came
 from a party that completed the authentication and was not altered in transit.

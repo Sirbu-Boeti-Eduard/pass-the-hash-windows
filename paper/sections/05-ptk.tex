@@ -92,9 +92,7 @@ The third is independence from the attacker's platform and from the target's cre
 store. The NTLM technique speaks the protocol from the attacking host or writes the hash
 into LSASS; both keep the attacker inside the Windows authentication stack. A TGT
 obtained once is a file, and the rest of the intrusion can be driven from any host with a
-Kerberos client \cite{fortra-impacket}. Ticket-level follow-on techniques extend the same
-material further, but rest on ticket lifetimes and service keys rather than on the hash,
-and this paper does not implement them.
+Kerberos client \cite{fortra-impacket}.
 
 \subsection{Where PtK stops}
 

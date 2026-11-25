@@ -89,8 +89,7 @@ accompanying repository.
 
 \subsection{Scope and non-goals}
 
-The scope is pass-the-hash and pass-the-key on Windows and Active Directory.
-Ticket forgery and certificate-based abuse rest on the same property but require
-a different lab, one built around ticket lifetimes and certificate authority
-misconfiguration, so they are discussed and not implemented. Protocol
-cryptanalysis is out of scope entirely.
+The scope is pass-the-hash and pass-the-key on Windows and Active Directory: two techniques
+consuming one primitive, both demonstrated and both measured. Protocol cryptanalysis is out of
+scope, and deliberately so. The paper takes NTLM and Kerberos as specified and argues that
+neither has to be broken for either technique to succeed.
