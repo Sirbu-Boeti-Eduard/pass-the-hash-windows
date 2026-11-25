@@ -53,15 +53,22 @@ introduce no competing definitions.
 
 ## Building the paper
 
-pdfLaTeX with Biber, no shell escape required:
-
 ```
-cd paper
-pdflatex main && biber main && pdflatex main && pdflatex main
+./build.sh              # build into build/main.pdf
+./build.sh --canonical  # force pdflatex + biber
+./build.sh --clean      # remove build/
 ```
 
-Diagrams are authored by the team as TikZ or as draw.io sources exported to PDF, both committed
-alongside the figure they produce.
+The canonical toolchain is pdfLaTeX with Biber and no shell escape. `build.sh` uses it when it is
+installed and otherwise falls back to Tectonic in a scratch copy, where the only difference is the
+bibliography engine: the body text and layout are unchanged, the reference list is set by
+`plainnat` instead of `biblatex`. Builds are deterministic: `build/` is restaged from `paper/`
+every run, and the document date is pinned to the last commit that touched `paper/`, so the same
+commit always yields the same PDF. The script fails on unresolved references, undefined citations
+and citation keys absent from `refs.bib`, and reports any `[[CITE: …]]` markers left in the text.
+
+`paper/` is never modified by a build. Diagrams are authored by the team as TikZ, or as draw.io
+sources exported to PDF, both committed alongside the figure they produce.
 
 ## Reproducing the lab
 
