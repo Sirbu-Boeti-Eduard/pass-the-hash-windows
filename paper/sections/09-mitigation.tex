@@ -1,46 +1,36 @@
 % ======================================================================
-% 9. EFFECTS AND MITIGATION  (budget: 2 pages)
+% 9. EFFECTS AND MITIGATION  (budget: 2.0 pages)
 % Structure: damage -> controls by layer -> measured effect in our lab.
-% Every control gets: what it stops, what it costs, what it does NOT stop.
+% Every control gets three answers: what it stops, what it costs, what it
+% does NOT stop. A control list without the third answer is marketing.
 % ======================================================================
 \section{Effects and Mitigation}
 \label{sec:mitigation}
 
 \subsection{Damage model}
-% TODO
-% - PtH converts one compromised workstation into the privileges of every
-%   privileged account that touched it. Quantify: one host, N cached admins.
-% - The compounding effect over time: each hop adds hashes.
-% - Historical anchors: NotPetya and similar campaigns as the reference case.
+% CLAIM (0.3): PtH converts one workstation into the privileges of every
+% privileged account that ever touched it, and each hop adds hashes.
+% Quantify with our own lab: one client, N cached admins.
 
 \subsection{Credential protection}
-% TODO
-% - Credential Guard / LSA protection (PPL): stops remote extraction of the
-%   hash; explicitly state what it does not do (a local admin can still
-%   abuse a live session).
-% - Protected Users group and its consequences (no NTLM, no delegation, no
-%   RC4) -- and the operational pain it causes.
-% - Disable WDigest; restrict cached credentials.
+% CLAIM (0.5): Credential Guard and LSA protection stop extraction; they do
+% not stop abuse of a live session by a local admin. Protected Users removes
+% NTLM and RC4 outright, at a documented operational cost. WDigest and
+% cached-credential limits as cheap wins.
 
 \subsection{Protocol hardening}
-% TODO
-% - Disable or restrict NTLM (audit first, then block per service); this is
-%   the only control that removes the PtH path outright.
-% - Kerberos: remove RC4, require AES, enforce FAST/armoring -- this removes
-%   the PtK path.
-% - SMB signing and encryption: state precisely that they address relay and
-%   tampering, not hash possession.
-% - EPA / channel binding for the HTTP-facing cases.
+% CLAIM (0.5): disabling or scoping NTLM removes the PtH path outright --
+% the only control that does. Removing RC4 and requiring AES plus FAST
+% removes the PtK path. SMB signing and encryption address relay and
+% tampering, not hash possession (cross-reference 4.3). EPA for the
+% HTTP-facing cases.
 
 \subsection{Architectural controls}
-% TODO
-% - Tiered administration, PAW, LAPS for local accounts, JIT elevation,
-%   gMSA/service accounts. Frame as "reduce how many hashes are reachable
-%   from a workstation", not as a checklist.
+% CLAIM (0.3): tiering, PAW, LAPS, JIT elevation, gMSA. Frame as "reduce how
+% many hashes are reachable from a workstation", not as a checklist.
 
 \subsection{Measured effectiveness in the lab}
-% TODO -- the strongest section of the essay
-% - Table: control applied -> scenario A/B/C outcome -> cost/limitation.
-% - Include one control that did not help, and explain why. That single
-%   negative result demonstrates understanding.
+% CLAIM (0.5): control applied -> outcome per scenario -> cost and limitation.
+% Include at least one control that did not help and explain why. That single
+% negative result is worth more than the rest of the table.
 % Figure: fig-mitigation-matrix.

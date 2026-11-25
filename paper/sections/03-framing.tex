@@ -1,34 +1,35 @@
 % ======================================================================
-% 3. FRAMING THE ATTACK FAMILY  (budget: 1.5 pages)
-% Goal: one mental model that makes PtH, PtK, PtT and PtC the same shape.
+% 3. FRAMING  (budget: 1.5 pages)
+% Job of the chapter: give the reader one mental model that makes PtH, PtK
+% (and the two out-of-scope variants) the same shape, then pin down exactly
+% what an attacker must already own.
 % ======================================================================
 \section{Credential Material as a Bearer Capability}
 \label{sec:framing}
 
 \subsection{The unifying property}
-% TODO
-% - The authenticator is not the password; it is any secret from which the
-%   protocol's proof can be computed.
-% - Enumerate the material Windows can hold: NT hash, AES keys, TGT/TGS
-%   session keys, certificates with PKINIT mapping.
-% - Consequence: each material has a matching "pass-the-X" attack, and the
-%   defence for all of them is the same shape (do not let the material exist
-%   on the host, or make it unusable off the host).
+% CLAIM (0.4): the authenticator is any secret from which the protocol's
+% proof can be computed -- not the password.
+% Beats: enumerate what Windows may hold (NT hash, AES keys, ticket session
+% keys, PKINIT certificates); each material has a matching "pass-the-X";
+% all of them die to the same class of defence (material must not exist on
+% the host, or must be unusable off it).
 
 \subsection{Threat model and preconditions}
-% TODO -- be rigorous here, it is what separates the essay from a blog post
-% - Attacker starting position: foothold on one host with local admin, or
-%   credential material obtained out of band.
-% - What PtH requires: (a) the NT hash, (b) a service accepting NTLM,
-%   (c) the account being authorised on the target (local admin / remote
-%   administration rights), (d) reachability.
-% - State clearly: PtH is lateral movement, not privilege escalation. It moves
-%   an existing privilege set to another host.
-% - Local-account caveat: UAC remote restrictions and
-%   LocalAccountTokenFilterPolicy -- a real-world papercut worth one paragraph.
+\subsubsection{Attacker starting positions}
+% CLAIM (0.3): two entry points only -- local admin on one host, or material
+% obtained out of band. Everything else in the paper follows from these.
+\subsubsection{The four preconditions}
+% CLAIM (0.4): hash + a service that accepts NTLM + authorisation on the
+% target + reachability. Removing any one of them ends the attack, which is
+% what chapter 9 exploits.
+\subsubsection{Lateral movement, not privilege escalation}
+% CLAIM (0.3): PtH transports an existing privilege set; it does not create
+% one. Include the local-account caveat: UAC remote restrictions and
+% LocalAccountTokenFilterPolicy, the most common reason a real-world attempt
+% fails at the last step.
 
-\subsection{Taxonomy and position of the study}
-% TODO
-% - Small figure or table: PtH | PtK | (PtT) | (PtC), with the material each
-%   consumes and the protocol family each speaks.
-% - One paragraph on the two excluded variants: same root cause, different lab.
+\subsection{Taxonomy and position of this study}
+% CLAIM (0.3): a small table positioning PtH, PtK, and the two excluded
+% variants by material consumed and protocol family spoken. One paragraph on
+% why the excluded two need a different lab (ticket lifecycle, AD CS).

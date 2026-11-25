@@ -82,29 +82,105 @@ Licensing: prose under CC BY 4.0, scripts under MIT. Third-party tools are cited
 
 ## 4. Essay structure and page budget
 
-Page counts are for the compiled PDF at 11 pt / A4 with the figures listed. Column *budget* is the
-target; it will move by ±20% once drafting starts.
+Page counts are for the compiled PDF at 11 pt / A4. Each subsection carries a page allocation and,
+in the source, a one-line *CLAIM* comment stating the single thing that subsection must
+establish. `paper/main.tex` currently compiles to a heading-only outline — that is the intended
+deliverable of this stage.
 
-| # | Chapter | Content | Pages |
-|---|---|---|---|
-| — | Abstract | Protocol, vulnerability class, what the PoC shows | 0.5 |
-| 1 | Introduction | Why NTLM/Kerberos still matter, the credential-theft problem, contribution, repo link | 1.5 |
-| 2 | Background: Windows Authentication from Zero | accounts & token model, LSASS/SAM/secrets storage, password→hash derivation, NTLM challenge-response, Kerberos in AD, which protocols carry which | 4.0 |
-| 3 | Framing the Attack Family | threat model, preconditions, "credential material as bearer capability", taxonomy and where each variant sits | 1.5 |
-| 4 | Pass-the-Hash in Depth | what the attacker needs, computing a valid NTLMv2 response locally, protocol coverage (SMB/WinRM/WMI/RPC/RDP), session-key & signing consequences, tool-to-protocol map | 3.5 |
-| 5 | Pass-the-Key / Overpass-the-Hash | RC4-HMAC key = NT hash, key material in AD, AS-REQ without a password, RC4 vs AES constraints | 2.0 |
-| 6 | PoC: Environment and Implementation | lab topology, isolation, snapshots, accounts, scenario A/B/C, evidence methodology, tooling and wrapper scripts | 3.0 |
-| 7 | Results | success matrix (protocol × technique × precondition), captured evidence, boundaries and failure cases | 1.5 |
-| 8 | Detection | event IDs and their meaning, NTLM auditing, network signals, behavioural/honeytoken detection | 1.5 |
-| 9 | Effects and Mitigation | credential protection, protocol hardening, architectural controls, measured before/after | 2.0 |
-| 10 | When These Attacks Actually Work | synthesis: what the precondition chain really looks like in a modern estate, what still fails | 1.0 |
-| 11 | Conclusion | | 0.5 |
-| — | References | ~25 entries, numeric | 1.0 |
-| — | Appendix | lab build commands, full log excerpts, extra captures | — |
+Drafting order is not reading order: 2.3 → 4.2 → 6 → 7 first, because those four carry the
+evidence; everything else is written around them.
 
-**Body total: ~22 pages including figures.** Figures are expensive: budget ~6 pages of them
-(§2.3 NTLM flow, §2.4 Kerberos flow, §4.2 local response computation, §6.1 topology, §7.1
-success matrix, §9.x before/after).
+### Front matter
+
+| | | Pages |
+|---|---|---|
+| — | Abstract (protocol, vulnerability class, PoC outcome) | 0.5 |
+
+### 1. Introduction — 1.5 p
+- 1.1 Motivation — NTLM is unbroken yet routinely defeated; deprecation as framing hook (0.4)
+- 1.2 Problem statement — the one sentence the essay defends (0.3)
+- 1.3 Contributions — four items, one per downstream chapter (0.4)
+- 1.4 Scope and non-goals — ticket and certificate abuse cited, not implemented (0.2)
+
+### 2. Background: Windows Authentication from Zero — 4.0 p
+- 2.1 Accounts, SIDs and the access token (0.5)
+- 2.2 Where Windows keeps secrets — 2.2.1 LSASS as the credential-bearing process (0.3); 2.2.2 local and domain stores (0.3)
+- 2.3 From password to key material — 2.3.1 the NT hash (0.4); 2.3.2 the derivation tree (0.4)
+- 2.4 NTLM challenge-response — 2.4.1 the three message types (0.3); 2.4.2 v1 versus v2 (0.3); 2.4.3 session key derivation (0.2)
+- 2.5 Kerberos in AD — 2.5.1 KDC, tickets, PAC (0.3); 2.5.2 pre-authentication (0.2); 2.5.3 encryption types and what keys them (0.2)
+- 2.6 Which protocols carry which authentication — table (0.3)
+- 2.7 Logon types and the token lifetime problem (0.3)
+
+### 3. Credential Material as a Bearer Capability — 1.5 p
+- 3.1 The unifying property (0.4)
+- 3.2 Threat model and preconditions — 3.2.1 starting positions (0.3); 3.2.2 the four preconditions (0.4); 3.2.3 lateral movement, not escalation (0.3)
+- 3.3 Taxonomy and position of this study (0.3)
+
+### 4. Pass-the-Hash in Depth — 3.5 p
+- 4.1 What the attacker actually holds (0.4)
+- 4.2 Computing a valid response without the password — 4.2.1 the derivation (0.5); 4.2.2 why this is not replay (0.3); 4.2.3 two ways to pass it (0.3)
+- 4.3 Consequences for signing and sealing (0.5)
+- 4.4 Protocol coverage — 4.4.1 SMB (0.2); 4.4.2 WinRM (0.2); 4.4.3 WMI/DCOM (0.2); 4.4.4 RDP Restricted Admin (0.2); 4.4.5 secondary carriers (0.2)
+- 4.5 Tooling landscape (0.4)
+
+### 5. Pass-the-Key — 2.0 p
+- 5.1 Why the NT hash is also a Kerberos key (0.5)
+- 5.2 Building an AS-REQ from a key — 5.2.1 pre-auth with a key (0.4); 5.2.2 etype negotiation and the downgrade incentive (0.3)
+- 5.3 What PtK buys over PtH (0.4)
+- 5.4 Where PtK stops (0.4)
+
+### 6. Proof-of-Concept — 3.0 p
+- 6.1 Lab topology and isolation (0.4)
+- 6.2 Identity and permission design (0.3)
+- 6.3 Acquiring the material (0.4)
+- 6.4 Scenario A — PtH over SMB (0.5)
+- 6.5 Scenario B — PtH over WinRM (0.3)
+- 6.6 Scenario C — PtK to a TGT (0.4) *[gate-dependent]*
+- 6.7 Evidence collection (0.4)
+- 6.8 Implementation and tooling (0.3)
+
+### 7. Results — 1.5 p
+- 7.1 Success matrix (0.5)
+- 7.2 Captured evidence (0.5)
+- 7.3 Boundaries observed (0.4)
+- 7.4 Cost of the chain (0.3)
+
+### 8. Detection — 1.5 p
+- 8.1 Host telemetry that matters (0.6)
+- 8.2 What the attack cannot hide (0.3)
+- 8.3 Network-level signals (0.2)
+- 8.4 Behavioural and deception controls (0.2)
+- 8.5 From telemetry to a rule (0.2)
+
+### 9. Effects and Mitigation — 2.0 p
+- 9.1 Damage model (0.3)
+- 9.2 Credential protection (0.5)
+- 9.3 Protocol hardening (0.5)
+- 9.4 Architectural controls (0.3)
+- 9.5 Measured effectiveness in the lab (0.5)
+
+### 10. When These Attacks Actually Work — 1.0 p
+- 10.1 The precondition chain as a decision procedure (0.4)
+- 10.2 Where it fails in a modern estate (0.3)
+- 10.3 What survives the deprecation (0.3)
+
+### 11. Conclusion — 0.5 p
+No subsections by design: finding, numbers, the one control worth funding, residual risk.
+
+### Back matter
+- References — ~25 entries, numeric (1.0)
+- A Lab Build · B Full Log Excerpts · C Capture Index · D Tool and Version Inventory
+
+**Body total: ~22 pages including figures.** Figures cost ~6 pages: `fig-hash-derivation` (2.3),
+`fig-ntlm-flow` (2.4), `fig-kerberos-flow` (2.5), `fig-locality` (4.2), `fig-lab-topology` (6.1),
+`fig-success-matrix` (7.1), `fig-mitigation-matrix` (9.5).
+
+**Structural rules held across the whole outline**
+1. Every chapter assumes only what earlier chapters established — no forward references to
+   undefined vocabulary.
+2. Every subsection states a claim; a subsection that cannot is merged or cut.
+3. Every claim in chapters 7 and 9 traces to a named artefact in `poc/evidence/`.
+4. Negative results are mandatory in 7.3 and 9.5.
 
 ---
 

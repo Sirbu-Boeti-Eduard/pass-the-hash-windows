@@ -1,63 +1,46 @@
 % ======================================================================
-% 6. PROOF OF CONCEPT  (budget: 3 pages)
-% Goal: a reader with the repo can rebuild this without asking us anything.
-% Declarative detail belongs in poc/README.md; here we explain decisions.
+% 6. PROOF OF CONCEPT  (budget: 3.0 pages)
+% Job of the chapter: justify design decisions and point at the repository
+% for mechanics. Declarative how-to lives in poc/README.md; do not duplicate.
+% Reader should be able to rebuild the lab from the repo alone.
 % ======================================================================
 \section{Proof-of-Concept: Environment and Implementation}
 \label{sec:poc}
 
 \subsection{Lab topology and isolation}
-% TODO
-% - One DC + one Windows client + one attacker host on a host-only network.
-% - No bridged adapter; no NAT to the internet during execution.
-% - Snapshot policy: clean, pre-attack, post-attack. Reproducibility claim.
+% CLAIM (0.4): three hosts on a host-only network, no bridged adapter, no
+% NAT during execution; snapshot policy yields reproducibility.
 % Figure: fig-lab-topology.
 
 \subsection{Identity and permission design}
-% TODO
-% - Two accounts: a normal user (to show the limits) and a
-%   "helpdesk admin" whose privileges exist on the client, not on the DC.
-% - Deliberately realistic: the hash owner is a member of the local
-%   Administrators group on the client -- the common real-world misconfiguration.
-% - Note where the account is NOT privileged, to keep the demo honest.
+% CLAIM (0.3): two accounts -- an unprivileged user to prove the limits, and
+% a "helpdesk admin" whose rights exist on the client and nowhere else. The
+% deliberate misconfiguration under test is stated as such, not hidden.
 
 \subsection{Acquiring the material}
-% TODO
-% - Step 1 of the chain: local admin on the client, read the credential store.
-% - Show the hash, not the password, and prove the password is unknown to the
-%   attacker (the account's password is not used anywhere in the attack).
-% - Discuss the realism caveat: obtaining local admin is the expensive part in
-%   a real intrusion; say so plainly.
+% CLAIM (0.4): local admin on the client reads the credential store; we show
+% the hash and never the password, and the account's password is used
+% nowhere in the attack. Say plainly that obtaining local admin is the
+% expensive part of a real intrusion -- this is the honesty the chapter needs.
 
 \subsection{Scenario A --- PtH over SMB}
-% TODO
-% - Sequence, expected artefacts on both ends, what could fail (share
-%   permissions, token filtering, signing policy).
+% CLAIM (0.5): full sequence, expected artefacts on client and DC, and the
+% three ways it can fail (share permissions, token filtering, signing policy).
 
 \subsection{Scenario B --- PtH over WinRM}
-% TODO
-% - Why WinRM often succeeds where SMB is hardened, and what the client
-%   and DC logs show.
+% CLAIM (0.3): why it succeeds where SMB is hardened, and what the logs show.
 
 \subsection{Scenario C --- PtK to a TGT}
-% TODO
-% - Same hash, Kerberos client, TGT obtained, service ticket used.
-% - Cut this block entirely if the 20 Dec gate closes.
+% CLAIM (0.4): same sixteen bytes, Kerberos client, TGT obtained, service
+% ticket used. Delete this subsection entirely if the gate closes.
 
 \subsection{Evidence collection}
-% TODO
-% - What we captured and why: DC + client security logs, NTLM auditing,
-%   packet capture at the client NIC, terminal transcripts.
-% - Timestamp alignment between hosts (NTP in the lab) so logs interleave.
-% - Naming convention for evidence files, so the Results chapter can cite them.
+% CLAIM (0.4): what we captured and why -- DC and client Security logs, NTLM
+% auditing, capture at the client NIC, terminal transcripts; single NTP
+% source so events interleave; naming convention the Results chapter cites.
 
 \subsection{Implementation and tooling}
-% TODO -- replaces the "custom tool" requirement
-% - We do not reimplement NTLM or Kerberos. We orchestrate maintained
-%   implementations and own the glue: environment bootstrap, scenario driver,
-%   evidence collection and a log-processing script that extracts the relevant
-%   events from Security.evtx and renders them as the tables in chapter 7.
-% - Justify this choice in two sentences: an independent cryptographic
-%   implementation would add risk and no evidence.
-% - Point to the repository for exact commands. Keep the PDF free of shell
-%   listings except where the output itself is the evidence.
+% CLAIM (0.3): we do not reimplement NTLM or Kerberos. Original code is glue:
+% environment bootstrap, scenario driver, .evtx extraction that renders the
+% chapter 7 tables. Two sentences of justification, then point to the repo.
+% No shell listings in the PDF except where the output is the evidence.

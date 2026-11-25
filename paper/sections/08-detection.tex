@@ -1,34 +1,36 @@
 % ======================================================================
 % 8. DETECTION  (budget: 1.5 pages)
-% Authority: every event ID mentioned must be confirmed against Microsoft docs.
+% Authority: every event ID and field name confirmed against Microsoft
+% documentation before submission. No folklore event IDs.
 % ======================================================================
 \section{Detection}
 \label{sec:detection}
 
 \subsection{Host telemetry that matters}
-% TODO
-% - 4624 logon type 3/9 with NTLM as the authentication package, and the
-%   detail fields worth alerting on (workstation name vs source IP mismatch,
-%   logon without a preceding interactive session).
-% - 4672 special privileges assigned, following a type-3 logon.
-% - 4776 credential validation on the DC and how it differs from 4624.
-% - 4768/4769 for the PtK side, including cipher/etype fields.
-% - 4648 explicit credential use as a baseline comparator.
+% CLAIM (0.6): five events carry the whole story.
+% 4624 type 3/9 with NTLM as the package -- and the fields worth alerting on
+% (workstation name vs source IP mismatch; logon with no preceding
+% interactive session). 4672 following a type-3 logon. 4776 on the DC and how
+% it differs from 4624. 4768/4769 with cipher for the PtK side. 4648 as the
+% baseline comparator that shows what "normal" explicit-credential use is.
 
 \subsection{What the attack cannot hide}
-% TODO
-% - The target always logs a successful network logon; the DC always validates.
-%   The attacker controls neither. This is the structural weakness of PtH.
-% - Therefore detection is about baselining "who logs on where with NTLM",
-%   not about catching a signature.
+% CLAIM (0.3): the target always logs a successful network logon and the DC
+% always validates it; the attacker controls neither. Detection is therefore
+% baselining who logs on where with NTLM, not signature matching. This is the
+% structural weakness of the whole family.
 
 \subsection{Network-level signals}
-% TODO
-% - NTLMSSP in clear where the carrier is not encrypted; Negotiate downgrade.
-% - NTLM auditing on the DC as the cheapest visibility win.
+% CLAIM (0.2): NTLMSSP visible wherever the carrier is unencrypted;
+% Negotiate downgrade as a corroborating sign; NTLM auditing on the DC as the
+% cheapest visibility win available.
 
 \subsection{Behavioural and deception controls}
-% TODO
-% - Honeytoken accounts / canary credentials in LSASS; any use is high signal.
-% - Baseline deviation: NTLM logon to a server that normally only does Kerberos.
-% - Short paragraph on EDR: what a memory read of LSASS looks like.
+% CLAIM (0.2): honeytoken accounts and canary credentials in LSASS -- any use
+% is high signal and near-zero false positive. One line on what an EDR sees
+% when LSASS memory is read.
+
+\subsection{From telemetry to a rule}
+% CLAIM (0.2): turn 8.1 into one concrete rule with its false-positive story,
+% then report how it fired against our own attack traffic. This is the
+% section that proves we can operationalise what we found.

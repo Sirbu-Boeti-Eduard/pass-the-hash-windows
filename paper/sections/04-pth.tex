@@ -1,56 +1,57 @@
 % ======================================================================
 % 4. PASS-THE-HASH IN DEPTH  (budget: 3.5 pages)
-% Goal: the reader can compute the response on paper and knows why the wire
-% evidence looks innocent.
+% Job of the chapter: the reader can reproduce the response computation on
+% paper, knows why the wire evidence looks innocent, and knows which
+% protocol choice changes the outcome.
 % ======================================================================
 \section{Pass-the-Hash in Depth}
 \label{sec:pth}
 
 \subsection{What the attacker actually holds}
-% TODO
-% - The 16-byte NT hash and nothing else. No password, no salt, no key history.
-% - Where it comes from in practice: LSASS memory, SAM/SECURITY hive from a
-%   backup or shadow copy, a dump of a domain controller.
-% - What the hash does NOT give: the plaintext, therefore no AES Kerberos keys
-%   and no password reuse elsewhere. Say this early; it bounds the technique.
+% CLAIM (0.4): sixteen bytes, and their limits.
+% Beats: no salt, no key history, no plaintext; where it comes from in
+% practice (LSASS, SAM/SECURITY from a backup or shadow copy, a DC dump);
+% what it does NOT buy (plaintext, AES Kerberos keys, reuse elsewhere).
 
 \subsection{Computing a valid response without the password}
-% TODO -- the mathematical core of the essay
-% - NTLMv2 response = HMAC-MD5(key = NT hash + username,
-%   message = server challenge || client challenge || timestamp || blob).
-% - Walk the derivation step by step, then point out the consequences:
-%     * a fresh timestamp and client challenge mean a new response every time;
-%     * the response is bound to the server's challenge, so it cannot be
-%       replayed to a different host -- PtH is not replay;
-%     * the server validates it without ever holding the password.
-% - Define the two ways to "pass" the hash: run the protocol from the attacker's
-%   host with the hash (network logon), or inject it into LSASS and let Windows
-%   do it (interactive/network logon from a session).
+\subsubsection{The derivation, step by step}
+% CLAIM (0.5): the response is HMAC-MD5 keyed with the NT hash over server
+% challenge || client challenge || timestamp || target info. Walk it once,
+% explicitly, and stop -- the rest of the section is consequences.
+\subsubsection{Why this is not replay}
+% CLAIM (0.3): fresh timestamp and client challenge per attempt, and the
+% binding to the server's challenge, mean a captured response cannot be
+% reused against another host. The proof lives in how the bytes were
+% produced, not in the bytes.
+\subsubsection{Two ways to pass it}
+% CLAIM (0.3): speak the protocol from the attacker's host (network logon),
+% or write the hash into LSASS and let Windows do it. Different logon types,
+% different forensic footprints -- feeds chapters 7 and 8.
 % Figure: fig-locality -- what crosses the wire vs what never does.
 
-\subsection{Consequence for SMB signing and sealing}
-% TODO
-% - The session key is derived from the same hash, so an attacker holding the
-%   hash can also produce valid signatures and sealed traffic.
-% - Therefore SMB signing defeats relay, not PtH, when the hash itself leaks.
-%   This nuance is the most commonly botched claim in student write-ups --
-%   get it right and cite the derivation.
+\subsection{Consequences for signing and sealing}
+% CLAIM (0.5): the session key derives from the same hash, so an attacker
+% holding the hash can also sign and seal. SMB signing therefore defeats
+% relay, not PtH. This is the single most frequently botched claim in
+% student write-ups; make it with the derivation, not with an assertion.
 
 \subsection{Protocol coverage}
-% TODO
-% - SMB: named pipes, ADMIN$/IPC$, service creation or scheduled task.
-% - WinRM: HTTP(S) SOAP, no share dependency, often allowed by firewall policy.
-% - WMI/DCOM: RPC over TCP 135 + dynamic range; needs no file share either.
-% - MSRPC services directly; RDP via Restricted Admin mode (special case:
-%   the logon is network-type, so the attacker's hash is never sent to the host,
-%   it is used locally to build the NTLM exchange).
-% - MSSQL and HTTP/Negotiate as secondary paths.
-% - For each: what privilege is required on the target, and what the target
-%   records in its logs. Feeds chapter 8.
+\subsubsection{SMB}
+% CLAIM (0.2): named pipes, ADMIN$/IPC$, service creation or scheduled task;
+% what privilege the account needs and what the target records.
+\subsubsection{WinRM}
+% CLAIM (0.2): no share dependency; often permitted by firewall policy where
+% SMB is blocked. Frequently the more reliable path in hardened estates.
+\subsubsection{WMI and DCOM}
+% CLAIM (0.2): RPC over 135 plus a dynamic range; no file share required.
+\subsubsection{RDP with Restricted Admin}
+% CLAIM (0.2): a special case worth its own paragraph -- the logon is
+% network-type and the hash never reaches the target, it is consumed locally.
+\subsubsection{Secondary carriers}
+% CLAIM (0.2): MSSQL, LDAP, HTTP/Negotiate. Short; the point is that the
+% technique is protocol-agnostic and therefore cannot be fixed per-protocol.
 
 \subsection{Tooling landscape}
-% TODO
-% - Do not evaluate tools; map capability to protocol. Keep to a table:
-%   tool | role (hash extraction, protocol client, orchestration) | notes.
-% - Note the project's position: we orchestrate and collect evidence, we do not
-%   reimplement cryptographic primitives.
+% CLAIM (0.4): a table mapping capability to protocol, not a tool review.
+% Note our position: orchestrate maintained implementations, own the glue and
+% the evidence pipeline. No reimplementation of crypto primitives.

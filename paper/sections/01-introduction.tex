@@ -1,36 +1,35 @@
 % ======================================================================
 % 1. INTRODUCTION  (budget: 1.5 pages)
-% Goal: the reader accepts that "password" is the wrong unit of analysis
-% before chapter 2 starts defining terms.
+% Job of the chapter: make the reader accept that "password" is the wrong
+% unit of analysis before chapter 2 starts defining terms.
 % ======================================================================
 \section{Introduction}
 \label{sec:intro}
 
 \subsection{Motivation}
-% TODO
-% - Authentication protocols are usually attacked at their design assumptions,
-%   not their ciphers. NTLM is a case study: no cryptographic break exists,
-%   and yet the protocol is trivially defeated when the wrong secret leaks.
-% - Scale of exposure: NTLM is still negotiable across SMB, RPC, WinRM, LDAP,
-%   MSSQL and HTTP/Negotiate; AD domain controllers still accept RC4 tickets.
-% - Microsoft has announced NTLM's deprecation -- use this as the framing hook:
-%   the technique matters most precisely while the protocol is still in place.
+% CLAIM (0.4): NTLM has never been cryptographically broken, yet it is the
+% most exploited authentication protocol on Windows -- because the attack
+% surface is the key handling, not the cipher.
+% Beats: scale of NTLM exposure across SMB/RPC/WinRM/LDAP/MSSQL/HTTP;
+% RC4 still accepted by DCs; Microsoft's deprecation announcement as the
+% framing hook (the technique matters most while the protocol is in place).
 
 \subsection{Problem statement}
-% TODO: the single sentence the essay defends. Suggested:
-% "Because both protocols allow a client to complete authentication using a
-%  locally stored derived key, any disclosure of that key is equivalent to
-%  disclosure of the account, regardless of password strength."
+% CLAIM (0.3): hold up the single sentence the whole essay defends.
+% "Because both protocols let a client complete authentication from a locally
+%  stored derived key, disclosure of that key is equivalent to disclosure of
+%  the account, independent of password strength and of transport encryption."
 
 \subsection{Contributions}
-% TODO: numbered list, 4 items
-%   1. A from-first-principles account of the key material Windows holds.
-%   2. A derivation-level explanation of why PtH is not replay.
-%   3. A reproducible PoC (PtH over SMB/WinRM, PtK to TGT) with captured evidence.
-%   4. Measured before/after of the defences that actually stop it.
-% Link the repository here (also in the title block).
+% CLAIM (0.4): four numbered items, each one a chapter.
+%   1. A from-first-principles account of the key material Windows holds (ch. 2-3).
+%   2. A derivation-level explanation of why PtH is not replay (ch. 4).
+%   3. A reproducible PoC -- PtH over SMB and WinRM, PtK to a TGT -- with
+%      captured evidence on both ends of the connection (ch. 6-7).
+%   4. Measured before/after of the controls that actually break the chain (ch. 9).
+% Repository link appears here as well as in the title block.
 
 \subsection{Scope and non-goals}
-% TODO: one short paragraph. State that ticket and certificate abuse share the
-% same root cause but are out of scope, and say why (different lab requirements).
-% Keep this brief: one or two sentences, no defensive justification.
+% CLAIM (0.2): ticket and certificate abuse share the root cause but need a
+% different lab (ticket lifecycle, AD CS misconfiguration); they are cited,
+% not implemented. Two sentences. No defensive justification.

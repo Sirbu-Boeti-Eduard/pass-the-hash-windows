@@ -1,11 +1,13 @@
 % ======================================================================
-% 11. CONCLUSION  (budget: 0.5 page)
+% 11. CONCLUSION  (budget: 0.5 page -- no subsections, by design)
+% Three moves only: the finding, what the PoC showed (numbers), the control
+% worth funding first plus the honest residual risk. No new material.
 % ======================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-% TODO, three moves only:
-%   1. Restate the finding: the protocol is not broken, the key handling is.
-%   2. Restate what the PoC demonstrated (numbers, not adjectives).
-%   3. The one control worth funding first, and the honest residual risk.
-% No new material. No "in today's ever-evolving threat landscape".
+% CLAIM: the protocol is not broken, the key handling is; therefore the fix is
+% to stop the key from existing on hosts we do not control, not to strengthen
+% the cipher. Close on the residual risk: as long as an authenticated session
+% can be replayed or a key can be recomputed, no protocol hardening finishes
+% the job.

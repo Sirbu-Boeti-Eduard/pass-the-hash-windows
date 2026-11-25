@@ -1,30 +1,34 @@
 % ======================================================================
-% 5. PASS-THE-KEY / OVERPASS-THE-HASH  (budget: 2 pages)
-% Gate: only expand past skeleton if the 20 Dec decision is "in".
+% 5. PASS-THE-KEY  (budget: 2.0 pages)
+% Job of the chapter: show this is not a second attack but the same attack
+% in a different protocol family, and locate exactly where it stops.
+% Gate: expand past skeleton only if the 20 Dec decision is "in".
 % ======================================================================
 \section{Pass-the-Key: the Kerberos Face of the Same Primitive}
 \label{sec:ptk}
 
 \subsection{Why the NT hash is also a Kerberos key}
-% TODO
-% - RC4-HMAC in AD uses the NT hash directly as the key.
-% - AES128/AES256 keys are derived from the plaintext with PBKDF2-like
-%   string-to-key salt (realm + username), so they are NOT derivable from the
-%   hash. This asymmetry is why RC4 is still negotiated in real estates and
-%   why its removal matters.
-% - Consequence: an attacker with a hash can request a TGT, and everything
-%   downstream is normal Kerberos.
+% CLAIM (0.5): RC4-HMAC in AD uses the NT hash directly as the long-term
+% key, so no additional extraction step exists between 4.2 and 5.2.
+% Then the asymmetry: AES keys come from the plaintext with a salted
+% string-to-key, so they are not reachable from the hash. Everything about
+% RC4's continued presence follows from that.
 
 \subsection{Building an AS-REQ from a key}
-% TODO
-% - Pre-authentication: encrypted timestamp keyed with the client key.
-% - What changes when you hold the key instead of the password: nothing,
-%   except that you cannot derive AES keys.
-% - Result: a TGT whose PAC says the user; then normal TGS requests.
-% - Note the downgrade angle: forcing etype 0x17 makes the hash sufficient.
+\subsubsection{Pre-authentication with a key instead of a password}
+% CLAIM (0.4): the encrypted timestamp is keyed with the client key; holding
+% the key is indistinguishable from holding the password for this purpose.
+% Result: a TGT carrying the user's PAC, then ordinary TGS requests.
+\subsubsection{Encryption-type negotiation and the downgrade incentive}
+% CLAIM (0.3): an RC4-only request is accepted unless policy forbids it. The
+% attacker's interest in etype 0x17 is a policy question, not a technical one.
 
 \subsection{What PtK buys over PtH}
-% TODO
-% - Kerberos-only environments (NTLM disabled) stop PtH but not PtK.
-% - Access to services that refuse NTLM.
-% - Tickets can be used from non-Windows hosts, so the attacker's OS is irrelevant.
+% CLAIM (0.4): reach into environments that have disabled NTLM, access to
+% services that refuse it, and independence from the attacker's operating
+% system. Cite the ticket-based follow-on without implementing it.
+
+\subsection{Where PtK stops}
+% CLAIM (0.4): AES-only enforcement, FAST/armoring, Protected Users, and the
+% absence of RC4 elsewhere in the path. This is the mirror of 9.3 and the
+% negative result we want to be able to demonstrate.

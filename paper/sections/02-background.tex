@@ -1,63 +1,70 @@
 % ======================================================================
-% 2. BACKGROUND  (budget: 4 pages, the heaviest chapter)
-% Goal: after this chapter the reader can follow chapter 4 without a glossary.
-% Structure: account -> secret -> derivation -> protocol -> carriage.
+% 2. BACKGROUND  (budget: 4.0 pages -- the heaviest chapter)
+% Job of the chapter: after this, the reader can follow chapter 4 without a
+% glossary. Order is deliberate: account -> secret -> derivation -> protocol
+% -> carriage. Each subsection introduces exactly the vocabulary the next
+% attack chapter will reuse.
 % ======================================================================
 \section{Background: Windows Authentication from Zero}
 \label{sec:background}
 
 \subsection{Accounts, SIDs and the access token}
-% TODO
-% - SAM database, local vs domain accounts, SIDs, RIDs.
-% - The access token: who the process is, which groups, which privileges.
-% - Why authentication and authorisation are separate problems here.
-% Figure: none yet.
+% CLAIM (0.5): Windows separates proving identity from carrying authority.
+% The token, not the logon, is what every later check consults.
+% Beats: SAM and the domain database; SID/RID; token contents; why a stolen
+% hash reproduces the same token as the legitimate user.
 
 \subsection{Where Windows keeps secrets}
-% TODO
-% - LSASS as the process that holds credential material; why it is the target.
-% - SAM hive, SECURITY hive, LSA secrets, DPAPI, cached domain credentials.
-% - The distinction between reversible storage (some legacy schemes) and
-%   derived storage (NT hash) -- and why the latter is still fatal.
-% - Mention WDigest as the historical accident that made plaintext available;
-%   keep to two sentences, it is context, not the topic.
+\subsubsection{LSASS as the credential-bearing process}
+% CLAIM (0.3): one process holds the material that makes the rest of the
+% essay possible; protecting it is a control, and reading it is step one of
+% every scenario in chapter 6.
+\subsubsection{Local and domain stores}
+% CLAIM (0.3): SAM, SECURITY hive, LSA secrets, DPAPI, cached domain
+% credentials -- what each holds and which of them yields a reusable
+% authenticator. WDigest in two sentences as the historical accident.
 
 \subsection{From password to key material}
-% TODO -- this subsection carries the essay's central claim
-% - NT hash = MD4(UTF-16LE(password)). Why it is unsalted and unslow.
-% - Chains: NT hash -> NTLM response; NT hash -> RC4-HMAC Kerberos key;
-%   plaintext -> AES128/AES256 keys (i.e. AES is NOT reachable from the hash).
-% - Say it explicitly: the hash is a key, not a stolen password in an odd format.
-% Figure: fig-hash-derivation (the derivation tree). Author this one first,
-% it is reused in sections 4 and 5.
+\subsubsection{The NT hash}
+% CLAIM (0.4): MD4 over UTF-16LE, unsalted and fast by design. Not a
+% password in disguise -- a key with no key management.
+\subsubsection{The derivation tree}
+% CLAIM (0.4): one figure, three branches: hash -> NTLM response; hash ->
+% RC4-HMAC Kerberos key; plaintext -> AES keys. The asymmetry in the third
+% branch bounds every technique in the paper.
+% Figure: fig-hash-derivation. Author this first; ch. 4 and 5 both reuse it.
 
 \subsection{NTLM: challenge-response}
-% TODO
-% - Type 1/2/3 messages; NTLMv1 vs NTLMv2 differences at the level of what is
-%   hashed (server challenge only vs challenge + client challenge + timestamp
-%   + target info).
-% - NetNTLMv2 as the on-the-wire artifact and why it is not the NT hash.
-% - Session key derivation from the response and the NT hash.
+\subsubsection{The three message types}
+% CLAIM (0.3): Type 1/2/3 and what each party contributes. The server never
+% holds the password and never receives the hash.
+\subsubsection{NTLMv1 versus NTLMv2}
+% CLAIM (0.3): what the response is computed over in each version. The v2
+% additions (client challenge, timestamp, target info) are what make a
+% captured response useless elsewhere -- seed for 4.2.2.
+\subsubsection{Session key derivation}
+% CLAIM (0.2): the session key comes from the response and the hash, which is
+% why signing and sealing are not an independent barrier (paid off in 4.3).
 % Figure: fig-ntlm-flow.
-% Sub-point to make explicit now: the server never sees a password and never
-% sees the NT hash either. It sees a response it can verify.
 
 \subsection{Kerberos in Active Directory}
-% TODO
-% - KDC role of the DC; AS-REQ/AS-REP; TGT; TGS-REQ/TGS-REP; service tickets.
-% - PAC and why it makes AD Kerberos more than stock RFC 4120.
-% - Pre-authentication: the encrypted timestamp. This is the hook for PtK.
-% - Encryption types: RC4-HMAC (0x17) vs AES (0x12/0x11) and what each is keyed on.
+\subsubsection{KDC, tickets and the PAC}
+% CLAIM (0.3): AS-REQ/AS-REP, TGT, TGS-REQ/TGS-REP, and why AD's PAC makes
+% this more than RFC 4120.
+\subsubsection{Pre-authentication}
+% CLAIM (0.2): the encrypted timestamp is the single message that turns a key
+% into a session. This is the hook for chapter 5.
+\subsubsection{Encryption types and what keys them}
+% CLAIM (0.2): RC4-HMAC (0x17) keyed by the NT hash; AES128/AES256 keyed by
+% the plaintext with a salt. State the consequence plainly.
 % Figure: fig-kerberos-flow.
 
 \subsection{Which protocols carry which authentication}
-% TODO
-% - Table: SMB, MSRPC/EPM, WinRM, WMI/DCOM, RDP, LDAP, MSSQL, HTTP/Negotiate,
-%   each with: default auth, whether NTLM is accepted, whether it can be disabled.
-% - This table is the reference for chapter 4's coverage discussion.
+% CLAIM (0.3 + table): SMB, MSRPC/EPM, WinRM, WMI/DCOM, RDP, LDAP, MSSQL,
+% HTTP/Negotiate -- default mechanism, NTLM acceptance, whether it can be
+% disabled. This table is the reference for 4.4 and 7.1.
 
 \subsection{Logon types and the token lifetime problem}
-% TODO
-% - Type 2 (interactive), 3 (network), 10 (RemoteInteractive), 9 (NewCredentials).
-% - Why a type-3 logon does not leave reusable credentials on the target, and
-%   why that is the property that makes PtH a lateral-movement primitive.
+% CLAIM (0.3): a type-3 logon leaves no reusable credential on the target.
+% That single property is what makes PtH lateral movement rather than
+% persistence, and it is why the attacker must carry the hash themselves.
