@@ -2,8 +2,9 @@
 % 2. BACKGROUND
 % Job: the minimum systems theory a pentester needs to reason about the
 % attack and to defend every claim in it. Order matters:
-% orientation -> identity -> secret -> derivation -> protocol -> carrier
-% -> what is left behind.
+% orientation -> identity -> secret -> proof under each protocol -> what the
+% proof leaves behind. The derivation tree lives in section 3.1 instead: it is
+% the primitive's figure, not an appendix to the hash.
 % ======================================================================
 \section{Background: How Windows Authenticates}
 \label{sec:background}
@@ -12,11 +13,14 @@ Three things have to line up before any of this makes sense: a secret, a protoco
 and a service that will take the protocol's word for it.
 
 Two values sit in an account record and they are not interchangeable. The \textbf{NT hash} is MD4
-over the UTF-16LE password: sixteen bytes, no salt, no iteration count, and identical on every
-machine for the same password. The \textbf{LM hash} is the older construction, the password
-uppercased, cut to fourteen characters, split into two seven-byte halves and used as DES keys. It
-is absent by default on current systems and gives you nothing the NT hash does not. When this
-article says ``the hash'', it means the NT hash.
+over the UTF-16LE password: a 16-byte digest with no salt and no iteration count, identical on
+every machine for the same password. The \textbf{LM hash} is the older construction, the password
+uppercased, cut to 14 bytes, split into two seven-byte halves, each padded with a null
+byte to the eight a DES key takes, and each used to encrypt the fixed constant
+\texttt{KGS!@\#\$\%}. It is absent by default on current systems and gives you nothing the NT hash
+does not (Figure~\ref{fig:lm-nt}). When this article says ``the hash'', it means the NT hash.
+
+\input{figures/fig-lm-nt}
 
 Two protocols consume it. \textbf{NTLM} is challenge-response: the server sends a challenge, the
 client computes a response from the hash, the server checks that response against its own copy.
@@ -83,7 +87,7 @@ A handful of relative identifiers are fixed, and worth recognising on sight:
 \begin{itemize}[leftmargin=1.6em]
   \item \textbf{500} --- the built-in Administrator, on a workstation and on a domain alike.
   \item \textbf{501} --- Guest.
-  \item \textbf{502} --- krbtgt, the account whose key encrypts every ticket-granting ticket.
+  \item \textbf{502} --- krbtgt, the account whose key encrypts every \mbox{ticket-granting} ticket.
   \item \textbf{512} --- Domain Admins.
   \item \textbf{513} --- Domain Users.
   \item \textbf{515} --- Domain Computers.
@@ -199,53 +203,243 @@ vault opens.
 In a default build only the LSASS copy is a key for this attack. WDigest, where a policy has
 restored it, is better than one. The other two are what people mistake for it.
 
-\subsection{From password to key material}
-\unwritten
-% WANT: NT hash = unsalted MD4 over UTF-16LE password, sixteen bytes, no host,
-% account or time component. LM as the older sibling in the same record.
-% ACADEMIA: why an unsalted fast hash is correct for logon and fatal for reuse.
+\subsection{NTLM: challenge-response}
+\label{sec:ntlm}
 
-\subsection{The derivation tree}
-\unwritten
-% WANT: one figure. password -> NT hash -> NTLM response; password (+ NT hash)
-% -> RC4 Kerberos key; password -> AES keys via salted PBKDF2, which the hash
-% cannot reach. This asymmetry bounds the whole article.
-% FIGURE: fig-hash-derivation (does not exist yet).
+NTLM is a challenge-response authentication protocol. The server sets a challenge, the client
+answers with a value computed from the account's key material, and the server tests the answer.
+The password is not in the exchange, and neither is the hash.
 
-\subsection{NTLM in three messages}
-\unwritten
-% WANT: NEGOTIATE / CHALLENGE / AUTHENTICATE. The server never receives the
-% hash; it verifies a response over a challenge it chose (itself, or via the
-% DC for a domain account). Then NTLMv1 (deterministic DES) vs NTLMv2.
-% FIGURE: fig-ntlm-flow (does not exist yet).
+Three messages carry it, named by type number in the specification~\cite{ms-nlmp}
+(Figure~\ref{fig:ntlm-flow}):
 
-\subsection{Why a captured NTLMv2 is not a hash}
-\unwritten
-% WANT: NetNTLMv2 is the challenge plus the response. It is a cracking
-% candidate, not a key: the response key is bound to user+domain and the proof
-% is bound to that server challenge. Most confusion in this area starts here.
+\begin{itemize}[leftmargin=1.6em]
+  \item \texttt{NEGOTIATE}, client to server: the dialect it accepts, its domain and workstation,
+    and the flags it wants set for the connection, among them Unicode strings, signing and sealing.
+  \item \texttt{CHALLENGE}, server to client: an eight-byte nonce generated for that connection,
+    and a target information block naming the server's domain and computer and carrying its time.
+  \item \texttt{AUTHENTICATE}, client to server: the account, the domain, and the response computed
+    over the nonce.
+\end{itemize}
 
-\subsection{AD Kerberos in four messages}
-\unwritten
-% WANT: AS-REQ / AS-REP / TGS-REQ / TGS-REP, the PAC, and pre-auth as an
-% encrypted timestamp. Four legs, four different keys.
-% ACADEMIA: one figure naming which key protects which leg.
-% FIGURE: fig-kerberos-flow (exists).
+\input{figures/fig-ntlm-flow}
 
-\subsection{Encryption types: the hinge of everything}
-\unwritten
-% WANT: for RC4-HMAC the long-term key *is* the NT hash; for AES128/256 it is
-% derived from the plaintext. One paragraph, because this single fact decides
-% whether pass-the-key works.
+Two dialects are in use. They differ in what the response is computed from, and that difference
+decides what a capture is worth (Table~\ref{tab:ntlm-dialects}).
 
-\subsection{Carriers: one auth layer, many transports}
-\unwritten
-% WANT: SMB, MSRPC, WMI/DCOM, WinRM, RDP, LDAP, MSSQL all borrow SSPI/SPNEGO.
-% (Table intent: protocol, default mech, NTLM accepted, can it be restricted.)
-% Blocking a port relocates the path; it does not remove the capability.
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\caption{The two NTLM dialects.}
+\label{tab:ntlm-dialects}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}m{3.3cm}>{\raggedright\arraybackslash}Y>{\raggedright\arraybackslash}Y@{}}
+\toprule
+\normalfont\itshape property & \normalfont\itshape NTLMv1 & \normalfont\itshape NTLMv2 \\
+\midrule
+\rowcolor{gray!7} Response inputs & hash, nonce & hash, nonce, account, domain, client block \\
+\addlinespace[3pt]
+Client-chosen inputs & none & timestamp, nonce, block \\
+\addlinespace[3pt]
+\rowcolor{gray!7} Same nonce, twice & identical bytes & different bytes \\
+\addlinespace[3pt]
+Bound to & the nonce & account, domain, nonce \\
+\addlinespace[3pt]
+\rowcolor{gray!7} Response length & 24 bytes & 16 bytes and a block \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-\subsection{Logon types: what gets left behind}
-\unwritten
-% WANT: type 2/9/10 make the authenticating host retain material; type 3 does
-% not. This is the difference between a stepping stone and a dead end, and it
-% drives the log story in chapters 7 and 8.
+Where the test happens depends on where the account lives: a local account is compared against the
+server's own SAM, and a domain account is passed over Netlogon to a domain controller, because the
+server holds no copy of a domain hash~\cite{windows-internals}. Netlogon is the RPC interface a
+member server uses to have a logon verified, and it shares nothing with NetBIOS beyond the era.
+Either way the exchange proves possession to a party that already stores the value.
+
+
+What an interception yields is the exchange written as one line: account, domain, the server's
+challenge, the proof, and the block the client built. Table~\ref{tab:netntlmv2} expands one such line,
+computed from the password \texttt{Password} for the account \texttt{User} in the domain
+\texttt{Domain}.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\caption{An NTLMv2 exchange, cut into the fields a capture records.}
+\label{tab:netntlmv2}
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily\footnotesize\raggedright\arraybackslash}p{5.4cm}>{\raggedleft\arraybackslash}p{0.8cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\normalfont\itshape field & \normalfont\itshape bytes & \normalfont\itshape meaning \\
+\midrule
+\rowcolor{gray!7} USER::Domain & n/a & account and domain \\
+0123456789abcdef & 8 & server nonce \\
+\rowcolor{gray!7} 68cd0ab851e51c96aabc927bebef6a1c & 16 & proof over the nonce and the block \\
+0101000000000000 & 8 & two version bytes, six reserved \\
+\rowcolor{gray!7} 0000000000000000 & 8 & timestamp, zero here \\
+aaaaaaaaaaaaaaaa & 8 & client nonce \\
+\rowcolor{gray!7} 00000000 & 4 & reserved \\
+02000c0044006f006d00610069006e00 & 16 & domain name \\
+\rowcolor{gray!7} 01000c00530065007200760065007200 & 16 & computer name \\
+0000000000000000 & 8 & end of list \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The artefact is not the hash, and it cannot stand in for one. A guessed password can be tested
+against it offline, because the computation is public and the response key is bound to the account
+and domain the line names. It cannot be replayed, because every server issues a fresh challenge and
+the proof was bound to the one it answered. It cannot be handed to a tool in place of a hash,
+because the proof is computed from the hash and not the other way round. Confusion about this protocol usually
+begins by treating the two objects as one.
+
+\subsection{Kerberos in Active Directory}
+\label{sec:kerberos}
+
+Section~\ref{sec:ntlm} described a protocol that proves a client to one server, on one connection,
+by having that server test a proof against a copy of the account's key. That works on a LAN and
+stops scaling in two directions. The client learns nothing about the server, so any host can demand
+a proof and keep it. And the identity ends where it is checked: an application server that has
+authenticated a user cannot pass that identity to the database behind it without holding the user's
+key itself.
+
+Kerberos was designed for the opposite assumption, a network of many services none of which should
+hold a user's key~\cite{neuman-tso}. One authority holds a key for every account and issues tickets;
+a service verifies a ticket with its own key and consults nobody. Active Directory adopted
+Kerberos~v5 as its network authentication protocol at launch~\cite{windows-internals}, with the
+domain controller acting as the key distribution centre, the KDC, as well as the directory.
+
+Two properties of the design matter for everything that follows. The session key is generated by the
+KDC and delivered to both parties; it is not derived from the account's long-term key. And the ticket
+is encrypted under the service's key, so the client carries a structure it can neither read nor
+forge, and the service opens it with a key it already holds. The verifying party no longer has to be
+told the answer.
+
+The exchange takes four messages before a service is reached (Figure~\ref{fig:kerberos-flow}). An
+AS-REQ asks the KDC for a \mbox{ticket-granting} ticket, the TGT; the AS-REP returns one, encrypted
+under the krbtgt key, together with a session key wrapped under the client's long-term key. A TGS-REQ
+presents that ticket and an authenticator; the TGS-REP returns a service ticket encrypted under the
+service account's key, and a second session key wrapped under the first. The client then presents the
+service ticket to the service itself, which is the first message no KDC sees. The long-term key does
+its work in the first two messages and in no others: once to produce the pre-authentication, once to
+unwrap the reply.
+
+\input{figures/fig-kerberos-flow}
+
+Every ticket carries an expiry, and the defaults bound what a stolen one is worth. A TGT is valid for
+10 hours and renewable for seven days, a service ticket for 10 hours, and a
+client clock more than five minutes out is refused~\cite{ms-gpsb}. Renewal is a TGS exchange
+authenticated with the ticket itself, so a session can outlive its ticket without the long-term key
+being used again. Nothing recalls a ticket already issued: disabling the account stops the next
+request, not the one in hand. That is the token argument of Section~\ref{sec:accounts} returning in
+different material.
+
+Authorization travels inside the ticket as well. The PAC is a structure the KDC attaches to it: the
+domain SID, the user's RID, the group RIDs, account flags and logon hours
+(Figure~\ref{fig:pac}). It is signed twice, once under the krbtgt key and once under the key of the
+service the ticket is for, so the service can verify the half addressed to it with a key it already
+holds~\cite{ms-pac}. The second signature is what a domain controller checks when a service asks it to
+validate the PAC. NTLM has no equivalent: there the domain controller returns group membership to
+the server over Netlogon at logon time, and the server builds the token from it. Here the
+authorization was decided before the client asked, and it travelled with the request.
+
+\input{figures/fig-pac}
+
+Pre-authentication is the one step that asks the client to use the long-term key.
+PA-ENC-TIMESTAMP carries the current time encrypted under that key; the KDC decrypts it with the key
+it holds, checks it against the clock, and reads a successful decryption as proof of
+possession~\cite{rfc4120}. The first AS-REQ often omits the timestamp, and the KDC answers with an
+error naming the encryption types it will accept~\cite{ms-kdc-rc4}. The mechanism exists to prevent
+offline guessing, since without it anyone could request a ticket and take the reply home. An account
+with pre-authentication disabled allows exactly that, which is a separate technique with its own
+tooling and is out of scope here (Section~\ref{sec:scope}).
+
+An account holds a key per encryption type, and the ticket records which one the KDC used
+(Table~\ref{tab:etypes}). The three a domain uses are not interchangeable at the point the key is
+chosen. For RC4-HMAC the long-term key is the NT hash itself~\cite{rfc4757}. For the two AES types it
+is a salted, iterated derivation from the plaintext password: PBKDF2-HMAC-SHA1 with 4096
+iterations, salted with the realm and the account name~\cite{rfc3962}.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\caption{The three encryption types a Windows domain uses, and where each long-term key comes from.}
+\label{tab:etypes}
+\begin{tabularx}{\textwidth}{@{}l@{\hspace{1.2em}}>{\raggedright\arraybackslash}p{5.3cm}>{\raggedright\arraybackslash}Y>{\raggedright\arraybackslash}p{2.1cm}@{}}
+\toprule
+\normalfont\itshape etype & \normalfont\itshape name & \normalfont\itshape long-term key &
+  \normalfont\itshape from the hash? \\
+\midrule
+\rowcolor{gray!7} \texttt{0x17} & RC4-HMAC & the NT hash itself, with no derivation & yes \\
+\texttt{0x11} & AES128-CTS-HMAC-SHA1-96 & PBKDF2-HMAC-SHA1 over the plaintext, salted and iterated & no \\
+\rowcolor{gray!7} \texttt{0x12} & AES256-CTS-HMAC-SHA1-96 & the same derivation, a longer key & no \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Which of the three the KDC may use is a property of the account object. The attribute that decides
+it, \texttt{msDS-SupportedEncryptionTypes}, is a bitmask on the object, and an account that sets no
+value inherits \texttt{DefaultDomainSupportedEncTypes} from the domain controller it asks~\cite{ms-kdc-rc4}.
+Until April 2026 that inherited default included RC4; the updates released that month changed it to
+AES only for accounts that set nothing, which makes RC4 an explicit per-account decision rather than
+an inherited one~\cite{ms-rc4-dc-default}. Chapter~\ref{sec:ptk} argues what that change does to the
+techniques in this article. What this section establishes is narrower: the choice is per account, it
+is written into the ticket, and it is recorded in the KDC's log.
+
+Both protocols remain installed, and the client picks between them at connection time through
+SPNEGO, the negotiation layer most Windows services use. Kerberos is offered when the client can name
+a service principal and obtain a ticket for it; NTLM answers when it cannot, which is the usual case
+when a tool connects by address rather than by name, or to a service with no principal
+registered~\cite{ms-kerberos-overview}. The two decisions are independent, so a host that refuses
+NTLM still accepts tickets for the same accounts.
+
+A ticket is bearer material, and the techniques that consume one are excluded here for that reason:
+pass-the-ticket replays a \mbox{ticket-granting} or service ticket lifted from LSASS or the ticket cache,
+roasting takes a ticket away to guess the key behind it, and a forged ticket substitutes a stolen
+long-term key for the KDC's authority (Section~\ref{sec:scope}). Chapter~\ref{sec:ptk} takes one move
+from that set and none of the others. It starts from the hash and asks the KDC for a real ticket.
+
+\subsection{Logon types: which service answers}
+\label{sec:logon-types}
+
+Windows labels each logon with a type, and the type records which door the credentials came through.
+Type~3 is the network logon, the one a file share, a management call or a database connection
+produces. Type~2 is a sign-in at the console, type~10 the same thing over RDP, and type~9 the odd
+one: a second logon session built by \texttt{runas\,/netonly} or Credential Manager, which serves
+outbound connections while the process keeps its own token (Table~\ref{tab:logon-types}).
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.15}
+\caption{The logon types this article meets, and what each leaves on the host.}
+\label{tab:logon-types}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{1.1cm}>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}Y>{\raggedright\arraybackslash}p{3.7cm}@{}}
+\toprule
+\normalfont\itshape type & \normalfont\itshape name & \normalfont\itshape what produces it &
+  \normalfont\itshape kept on the host \\
+\midrule
+\rowcolor{gray!7} 2 & interactive & a sign-in at the console & yes, for the session \\
+3 & network & SMB, WinRM, WMI, LDAP, a database & nothing \\
+\rowcolor{gray!7} 9 & NewCredentials & \texttt{runas\,/netonly}, Credential Manager & yes, in its own session \\
+10 & remote interactive & RDP & yes, for the session \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The types do not travel together, and the difference is not only which port is open. RDP requires the
+account to hold the log-on-through-Remote-Desktop-Services right, which by default reaches
+Administrators and Remote Desktop Users; WinRM checks the security descriptor on the endpoint it is
+asked for, which by default reaches Administrators and Remote Management
+Users~\cite{ms-rdp-logon-right,ms-psremoting-requirements}. The grants are separate, so membership of
+one group opens one door and not the other. A service account in Remote Management Users reaches WinRM
+and is refused a desktop; a user granted neither still authenticates over SMB and gets nothing
+further.
+
+The last column is the other half of the question. A network logon is verified by the far end and
+discarded, so the host keeps nothing it could later give up. The interactive types are verified on the
+host, and it holds that account's material until the session ends. For an administrator's account
+that difference is the whole shape of an engagement: arriving over SMB leaves nothing behind, while
+arriving over RDP leaves the hash on that host for as long as the desktop is open, where the next
+person with local administrator rights can take it.

@@ -1,56 +1,70 @@
-% Figure: the two exchange pairs a client performs with the KDC.
-% Used in section 2.5.1. Deliberately spare: four arrows, and for each one
-% the key that protects it.
+% Figure: the exchange a client performs with the KDC, and then with the service.
+% Used in section 2.4. Same construction as fig-ntlm-flow: three lifelines,
+% numbered messages, and for each one the key that protects it. Line breaks are
+% explicit so that protocol names are never hyphenated.
+% The KDC lifeline turns dashed after message 4: the service never consults it.
 \begin{figure}[htbp]
 \centering
 \small
 \begin{tikzpicture}[
   ar/.style={-{Stealth[length=2.2mm]}, draw=black!65, thick},
-  msg/.style={align=center, font=\footnotesize, text width=8.4cm},
+  dnar/.style={-{Stealth[length=2.0mm]}, draw=black!55, thick, dashed},
+  msg/.style={align=center, font=\footnotesize, text width=6.3cm},
   key/.style={align=center, font=\scriptsize\itshape, text=black!60},
   life/.style={draw=black!35, thick}
 ]
 
-\def\cw{0}
-\def\kw{9.4}
+\def\cl{-6.6}
+\def\kd{0}
+\def\sv{6.6}
 
 % lifelines
-\draw[life] (\cw,0.55) -- (\cw,-8.1);
-\draw[life] (\kw,0.55) -- (\kw,-8.1);
-\node[font=\footnotesize\bfseries] at (\cw,0.85) {client};
-\node[font=\footnotesize\bfseries] at (\kw,0.85) {KDC \textnormal{(domain controller)}};
+\draw[life] (\cl,0.55) -- (\cl,-7.5);
+\draw[life] (\kd,0.55) -- (\kd,-4.9);
+\draw[life,dashed] (\kd,-4.9) -- (\kd,-7.5);
+\draw[life] (\sv,0.55) -- (\sv,-7.5);
+\node[font=\footnotesize\bfseries] at (\cl,0.85) {client};
+\node[font=\footnotesize\bfseries] at (\kd,0.85) {KDC \textnormal{(domain controller)}};
+\node[font=\footnotesize\bfseries] at (\sv,0.85) {service};
 
 % 1 ---------------------------------------------------------------
-\draw[ar] (\cw,-0.3) -- (\kw,-0.3)
-  node[midway, above=2pt, msg] {\textbf{1\quad AS-REQ}\\
-    pre-authentication: a timestamp\\[1pt]
-    {\scriptsize\itshape encrypted with the client's long-term key}};
-\fill (\cw,-0.3) circle (1.6pt); \fill (\kw,-0.3) circle (1.6pt);
+\draw[ar] (\cl,-0.55) -- (\kd,-0.55)
+  node[midway, above=2pt, msg] {\textbf{1\quad AS-REQ}\\[1pt]
+    {\scriptsize\itshape a timestamp under the client's long-term key}};
+\fill (\cl,-0.55) circle (1.6pt); \fill (\kd,-0.55) circle (1.6pt);
 
 % 2 ---------------------------------------------------------------
-\draw[ar] (\kw,-2.7) -- (\cw,-2.7)
-  node[midway, above=2pt, msg] {\textbf{2\quad AS-REP}\\
-    a session key, and a TGT\\[1pt]
-    {\scriptsize\itshape session key under the client key; TGT under the krbtgt key}};
-\fill (\cw,-2.7) circle (1.6pt); \fill (\kw,-2.7) circle (1.6pt);
+\draw[ar] (\kd,-2.0) -- (\cl,-2.0)
+  node[midway, above=2pt, msg] {\textbf{2\quad AS-REP}\\[1pt]
+    {\scriptsize\itshape session key under the client's key; TGT under the krbtgt key}};
+\fill (\cl,-2.0) circle (1.6pt); \fill (\kd,-2.0) circle (1.6pt);
 
 % 3 ---------------------------------------------------------------
-\draw[ar] (\cw,-5.1) -- (\kw,-5.1)
-  node[midway, above=2pt, msg] {\textbf{3\quad TGS-REQ}\\
-    the TGT, an authenticator, and the name of the service wanted\\[1pt]
-    {\scriptsize\itshape authenticator under the session key from arrow 2}};
-\fill (\cw,-5.1) circle (1.6pt); \fill (\kw,-5.1) circle (1.6pt);
+\draw[ar] (\cl,-3.45) -- (\kd,-3.45)
+  node[midway, above=2pt, msg] {\textbf{3\quad TGS-REQ}\\[1pt]
+    {\scriptsize\itshape the TGT, and an authenticator under the session key}};
+\fill (\cl,-3.45) circle (1.6pt); \fill (\kd,-3.45) circle (1.6pt);
 
 % 4 ---------------------------------------------------------------
-\draw[ar] (\kw,-7.5) -- (\cw,-7.5)
-  node[midway, above=2pt, msg] {\textbf{4\quad TGS-REP}\\
-    a service ticket, and a second session key\\[1pt]
-    {\scriptsize\itshape ticket under the service account's key; session key under the first}};
-\fill (\cw,-7.5) circle (1.6pt); \fill (\kw,-7.5) circle (1.6pt);
+\draw[ar] (\kd,-4.9) -- (\cl,-4.9)
+  node[midway, above=2pt, msg] {\textbf{4\quad TGS-REP}\\[1pt]
+    {\scriptsize\itshape service ticket under the service's key; a new session key under the current one}};
+\fill (\cl,-4.9) circle (1.6pt); \fill (\kd,-4.9) circle (1.6pt);
+
+% 5 ---------------------------------------------------------------
+\draw[ar] (\cl,-6.35) -- (\sv,-6.35)
+  node[pos=0.72, above=2pt, msg] {\textbf{5\quad AP-REQ}\\[1pt]
+    {\scriptsize\itshape the ticket, and an authenticator under the session key}};
+\fill (\cl,-6.35) circle (1.6pt); \fill (\sv,-6.35) circle (1.6pt);
+
+% 6 ---------------------------------------------------------------
+\draw[dnar] (\sv,-7.25) -- (\cl,-7.25)
+  node[midway, below=2pt, font=\footnotesize, align=center]
+    {\textbf{6\quad AP-REP}\quad{\scriptsize\itshape optional: mutual authentication}};
+\fill (\cl,-7.25) circle (1.6pt); \fill (\sv,-7.25) circle (1.6pt);
 
 \end{tikzpicture}
-\caption{The two exchanges with the KDC, and the key that protects each leg. The long-term key
-does its work once, at arrow~1; the rest runs on session keys the KDC hands out, inside tickets
-that carry the identity and the rights.}
+\caption{The exchange with the KDC and then with the service, each message annotated with the key
+that protects it.}
 \label{fig:kerberos-flow}
 \end{figure}

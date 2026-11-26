@@ -31,6 +31,3 @@ poc/**/*.pfx
 
 # local preview build (see build.sh)
 build/
-
-# superseded draft prose, kept locally; history has it at 2efaae2
-paper/sections/_draft-v1/

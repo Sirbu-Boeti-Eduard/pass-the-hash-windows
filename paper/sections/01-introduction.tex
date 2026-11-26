@@ -14,7 +14,7 @@ proof locally. NTLMv2 sends a response computed from a key that never crosses th
 sends a timestamp encrypted under the same kind of key. A server that accepts either cannot tell
 whether the client typed the password a minute ago or read the key out of memory last week.
 
-The key is the NT hash: sixteen bytes, MD4 over the password, no salt and no host component.
+The key is the NT hash: 16 bytes, MD4 over the password, no salt and no host component.
 NTLM consumes it directly, and so does Kerberos when RC4 is negotiated. Possession is therefore
 enough. Nothing has to be cracked, no captured response has to be replayed, and no protocol has
 to be broken. Pass-the-hash and pass-the-key are one primitive pointed at two protocol families.
@@ -34,9 +34,9 @@ was removed, and Figure~\ref{fig:auth-timeline} lines the dates up.
 NTLM is deprecated, and Microsoft's stated target is to disable it by default in the next major
 release of client and server, not to delete it \cite{ms-ntlmless-faq}. In-market versions keep
 accepting it, and the installed base explains why. Figure~\ref{fig:server-versions} counts servers
-still on the release that is about to lose support: 17.9\% on Windows Server 2003 eleven months
+still on the release that is about to lose support: 17.9\% on Windows Server 2003 11 months
 after its patches stopped, 20.9\% on 2012~R2 five weeks before the deadline, and 20.3\% on Server
-2016 ten months before January 2027 \cite{register-2026-server2016,techzine-2023-server2012}.
+2016 10 months before January 2027 \cite{register-2026-server2016,techzine-2023-server2012}.
 Three inventories from two vendors, and the same fraction each time. An engagement meets the
 protocol generation of the estate, not of the current release.
 
@@ -68,8 +68,8 @@ answer to why the Windows estate keeps winning arguments. None of it needs a cou
 cryptography. All of it assumes you can read a packet capture and a log.
 
 The first half fast-tracks what the attack rests on: where Windows stores keys, how a password
-becomes one, which logon type leaves what behind, and why both protocols accept a proof computed
-on the client. It goes a little past the minimum, because a technique you can only run when the
+becomes one, which services will answer a logon, and why both protocols accept a proof computed on
+the client. It goes a little past the minimum, because a technique you can only run when the
 target behaves as expected is not one you understand.
 
 The second half is the work: a lab you can rebuild, three scenarios, the logs both ends produce,
@@ -90,7 +90,7 @@ autonomous operator.
 
 If that reads as a soft case for agents, put it in front of the pentester covering a few hundred
 machines in an internal engagement. Spraying one hash across the subnet returns \texttt{valid} on
-a hundred hosts and executes on almost none, because the account authenticated and still had no
+100 hosts and executes on almost none, because the account authenticated and still had no
 rights on the target. Working out which host is which, by hand, is where the day goes. That
 sorting is the work a skill does, which is why this one is written down.
 
@@ -98,7 +98,7 @@ sorting is the work a skill does, which is why this one is written down.
 \label{sec:scope}
 
 Two techniques, not the whole family. Pass-the-hash consumes the NT hash over NTLM, and
-pass-the-key consumes the same sixteen bytes over RC4 Kerberos. The rest of the family has the
+pass-the-key consumes the same 16 bytes over RC4 Kerberos. The rest of the family has the
 same shape with different material: pass-the-ticket replays a TGT or a service ticket,
 pass-the-certificate uses the private key behind an enrolled certificate in place of a password,
 and pass-the-PRT replays a Primary Refresh Token from a hybrid-joined device. Each brings its own

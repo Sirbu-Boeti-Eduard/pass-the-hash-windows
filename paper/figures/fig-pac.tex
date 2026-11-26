@@ -1,0 +1,27 @@
+% Figure: the PAC as the KDC writes it into a ticket. Used in section 2.4.
+% Same form as fig-token: one fbox holding a two-column table, no annotation
+% outside the box. The two signature rows are the part that matters, since they
+% are what lets a service decide without a directory call.
+% Values are illustrative, not taken from a real ticket.
+\begin{figure}[H]
+\centering
+\footnotesize
+\setlength{\fboxsep}{6pt}%
+\fbox{\begin{tabular}{@{}l@{\hspace{1.8em}}l@{}}
+  \multicolumn{2}{@{}l}{\normalsize\textbf{the PAC}}\\[3pt]
+  \midrule
+  logon domain SID   & \texttt{S-1-5-21-1482-1692-3301}\\
+  user RID           & \texttt{1105}\\
+  group RIDs         & \texttt{513, 1108, 1109}\\
+  user flags         & lockout, password expired, \dots\\
+  logon hours        & \texttt{00:00--24:00}\\
+  password last set  & \texttt{2026-09-14}\\
+  logon server       & \texttt{DC01}\\
+  \midrule
+  signature, server  & under the service account's key\\
+  signature, KDC     & under the krbtgt key\\
+  \bottomrule
+\end{tabular}}
+\caption{What the PAC carries, inside every ticket, and the two signatures under it.}
+\label{fig:pac}
+\end{figure}

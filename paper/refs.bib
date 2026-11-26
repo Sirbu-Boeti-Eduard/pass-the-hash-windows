@@ -56,6 +56,46 @@
   note        = {String-to-key and key derivation for etypes 0x11 and 0x12}
 }
 
+@techreport{rfc4757,
+  author      = {Zhu, Larry and Jaganathan, Karthik and Hartman, Sam},
+  title       = {The {RC4-HMAC} Kerberos Encryption Types Used by {Microsoft Windows}},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {4757},
+  year        = {2006},
+  url         = {https://www.rfc-editor.org/rfc/rfc4757},
+  note        = {Etype 0x17 is keyed by the NT hash}
+}
+
+@techreport{ms-pac,
+  author      = {{Microsoft Corporation}},
+  title       = {{[MS-PAC]}: {Privilege Attribute Certificate} Data Structure},
+  institution = {Microsoft Open Specifications},
+  year        = {2024},
+  url         = {https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-pac/},
+  urldate     = {2026-11-26}
+}
+
+@techreport{ms-gpsb,
+  author      = {{Microsoft Corporation}},
+  title       = {{[MS-GPSB]}: {Kerberos} Policy},
+  institution = {Microsoft Open Specifications},
+  year        = {2024},
+  note        = {Defaults: 10-hour ticket, 600-minute service ticket, 7-day renewal, 5-minute skew},
+  url         = {https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-gpsb/0fce5b92-bcc1-4b96-9c2b-56397c3f144f},
+  urldate     = {2026-11-26}
+}
+
+@article{neuman-tso,
+  author  = {Neuman, B. Clifford and Ts'o, Theodore},
+  title   = {Kerberos: An Authentication Service for Computer Networks},
+  journal = {IEEE Communications Magazine},
+  volume  = {32},
+  number  = {9},
+  pages   = {33--38},
+  year    = {1994}
+}
+
 % ------------------------------------------------------ Windows internals
 @book{windows-internals,
   author    = {Yosifovich, Pavel and Ionescu, Alex and Russinovich, Mark E. and Solomon, David A.},
@@ -110,6 +150,46 @@
   year         = {2023},
   url          = {https://learn.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/protected-users-security-group},
   urldate      = {2026-11-25}
+}
+
+@misc{ms-rdp-logon-right,
+  author       = {{Microsoft Corporation}},
+  title        = {Allow log on through {Remote Desktop Services}},
+  howpublished = {Microsoft Learn, Security Policy Settings},
+  year         = {2023},
+  note         = {Default holders of the right: Administrators, and Remote Desktop Users on workstations and member servers},
+  url          = {https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/security-policy-settings/allow-log-on-through-remote-desktop-services},
+  urldate      = {2026-11-26}
+}
+
+@misc{ms-psremoting-requirements,
+  author       = {{Microsoft Corporation}},
+  title        = {about\_Remote\_Requirements},
+  howpublished = {Microsoft Learn, PowerShell documentation},
+  year         = {2026},
+  note         = {Membership of Administrators or Remote Management Users, and the endpoint's security descriptor, govern remote sessions},
+  url          = {https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_remote_requirements},
+  urldate      = {2026-11-26}
+}
+
+@misc{ms-kdc-rc4,
+  author       = {{Microsoft Corporation}},
+  title        = {Detect and remediate {RC4} usage in {Kerberos}},
+  howpublished = {Microsoft Learn, Windows Server},
+  year         = {2026},
+  note         = {The account attribute and the domain default behind the choice of etype},
+  url          = {https://learn.microsoft.com/en-us/windows-server/security/kerberos/detect-remediate-rc4-kerberos},
+  urldate      = {2026-11-26}
+}
+
+@misc{ms-rc4-dc-default,
+  author       = {{Microsoft Corporation}},
+  title        = {How to manage {Kerberos} {KDC} usage of {RC4} for service account ticket issuance changes related to {CVE-2026-20833}},
+  howpublished = {Microsoft Support},
+  year         = {2026},
+  note         = {April 2026 updates move the domain default to AES-SHA1 (0x18) where the account sets nothing},
+  url          = {https://support.microsoft.com/help/5073381},
+  urldate      = {2026-11-26}
 }
 
 @misc{ms-restrict-ntlm,

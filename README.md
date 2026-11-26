@@ -36,7 +36,7 @@ auditing, and packet captures, so each claim in the results chapter traces to a 
 |---|---|
 | `paper/` | the article in LaTeX: `main.tex`, one file per section in `sections/`, bibliography in `refs.bib`, diagrams in `figures/` |
 | `poc/` | lab definition, the agent skills that drive each scenario, and the curated evidence |
-| `prompts/` | working notes for whoever continues the draft: house style, de-slopping, handoff brief |
+| `prompts/` | working notes for whoever continues the draft: section brief, house style, de-slopping |
 | `docs/` | scratch notes, not part of the PDF |
 
 ## Structure
@@ -60,9 +60,10 @@ assume its vocabulary and introduce no competing definitions.
 
 ## Status
 
-Drafting. Chapter 1 and the opening of chapter 2 — the primer, 2.1 accounts and tokens, 2.2 where
-the hash lives — are written. The rest of chapter 2 and chapters 3 to 12 carry headings and intent
-notes only. The lab has not been built yet.
+Drafting. Chapter 1 and the first half of chapter 2 are written: the unnumbered primer with the two
+hashes, 2.1 accounts and tokens, 2.2 where the hash lives, 2.3 NTLM as a challenge-response
+protocol, and 2.4 Kerberos in Active Directory. 2.5 logon types, and chapters 3 to 12, carry
+headings and intent notes only. The lab has not been built yet.
 
 ## Building the paper
 

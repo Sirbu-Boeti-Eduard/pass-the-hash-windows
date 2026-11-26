@@ -10,7 +10,7 @@
 
 \subsection{What you actually hold}
 \unwritten
-% WANT: sixteen bytes with nothing attached - no salt, no key id, no account
+% WANT: 16 bytes with nothing attached - no salt, no key id, no account
 % name - which is exactly why it pastes into a shell and stays valid.
 % Three acquisition paths: LSASS (admin/SYSTEM, a fresh logon), offline SAM +
 % SECURITY hives (local accounts, no code execution), DC database (whole domain).
@@ -22,7 +22,7 @@
 % proof, response, session base key), and the point each one carries:
 % response key binds the hash to user+domain; the temp block is client-chosen;
 % the proof is per-attempt.
-% TABLE: five values / built from / supplied by. Archive: _draft-v1/04-pth.tex.
+% TABLE: five values / built from / supplied by.
 
 \subsection{Why this is not replay}
 \unwritten
