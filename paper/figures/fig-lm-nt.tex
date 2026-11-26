@@ -1,49 +1,57 @@
-% Figure: the same password reaching two different secrets.
-% Used in section 2.2.2, referenced again from 2.3.1.
-\begin{figure}[htbp]
+% Figure: one password, the two hashes a Windows record stores for it.
+% The LM step is one box holding two key rows: seven bytes of password plus the
+% null byte that brings each to the eight a DES key takes. The DES box names the
+% key in the subscript, so the password chunk is visibly the key rather than the
+% plaintext. Values for Password1: NT 5bc6..., LM 93fab.../060799...
+\begin{figure}[H]
 \centering
-\small
+\captionsetup{skip=5pt}
 \begin{tikzpicture}[
   box/.style={draw=black!45, rounded corners=2pt, inner sep=4pt, align=center,
-              text width=3.0cm, minimum height=1.15cm, font=\footnotesize},
+              font=\footnotesize, minimum height=1.0cm},
   term/.style={draw=black!70, rounded corners=2pt, inner sep=4pt, align=center,
-               text width=3.0cm, minimum height=1.15cm, font=\footnotesize, fill=black!6},
+               font=\footnotesize, fill=black!6, minimum height=1.0cm},
+  sub/.style={draw=black!30, rounded corners=1.5pt, inner sep=1.5pt, align=left},
   ar/.style={-{Stealth[length=2mm]}, draw=black!60}
 ]
 
-% shared source
-\node[term] (pw) at (0,-1.7) {\texttt{Password1}\\the only input};
+% ---------------- LM step: uppercase, cut, two keys (one big box) ----------
+\node[align=center, font=\scriptsize, anchor=north] (lup) at (4.7,-2.20)
+  {uppercase, {\footnotesize\texttt{PASSWORD1}}, cut to 14};
+\node[sub, anchor=north] (k1) at ([yshift=-5pt]lup.south)
+  {\textcolor{black!60}{\scriptsize key 1}\enspace{\scriptsize\texttt{50415353574f52}}\,{\scriptsize\texttt{+}}\textcolor{black!45}{\scriptsize\texttt{00}}};
+\node[sub, anchor=north] (k2) at ([yshift=-2pt]k1.south)
+  {\textcolor{black!60}{\scriptsize key 2}\enspace{\scriptsize\texttt{44310000000000}}\,{\scriptsize\texttt{+}}\textcolor{black!45}{\scriptsize\texttt{00}}};
+\node[box, fit=(lup)(k1)(k2), inner sep=4pt] (step) {};
 
-% ---- NT branch (top row) ---------------------------------------------
-\node[box] (u16)  at (4.1,0)    {encode UTF-16LE\\18 bytes, case kept};
-\node[box] (md4)  at (7.55,0)   {MD4\\single pass, no salt};
-\node[term] (nt)  at (11.0,0)   {\texttt{NT hash}\\16 bytes};
+% ---------------- DES and its two results ---------------------------------
+\node[box, right=0.55cm of step] (des)
+  {{\scriptsize$\mathtt{DES}_{k_1}(\mathtt{KGS!@\#\$\%})$}\\[1pt]
+   {\scriptsize$\mathtt{DES}_{k_2}(\mathtt{KGS!@\#\$\%})$}};
 
-% ---- LM branch (bottom row) ------------------------------------------
-\node[box] (up)   at (4.1,-3.4) {uppercase, then cut to 14 bytes\\case lost, rest discarded};
-\node[box] (des)  at (7.55,-3.4){split 7+7, each half a DES key\\encrypting the constant
-                                 \texttt{KGS!@\#\$\%}};
-\node[term] (lm)  at (11.0,-3.4){\texttt{LM hash}\\16 bytes, two halves};
+% ---------------- stored values -------------------------------------------
+\node[term, right=0.55cm of des] (lmh)
+  {\texttt{LM hash, 16 bytes}\\[1pt]
+   {\scriptsize\texttt{93fab6c61519a5e5}}\\
+   {\scriptsize\texttt{060799828bfccceb}}};
 
-% edges
-\draw[ar] (pw.east) -- ++(0.5,0) |- (u16.west);
-\draw[ar] (pw.east) -- ++(0.5,0) |- (up.west);
-\draw[ar] (u16) -- (md4);
-\draw[ar] (md4) -- (nt);
-\draw[ar] (up) -- (des);
-\draw[ar] (des) -- (lm);
+\node[box] (md4) at (step |- 0,0) {MD4};
+\node[term] (nth) at (lmh |- 0,0)
+  {\texttt{NT hash, 16 bytes}\\[1pt]
+   {\scriptsize\texttt{5bc6fc211d85ee6e}}\\
+   {\scriptsize\texttt{186790b1272c942d}}};
 
-% the point
-\node[font=\footnotesize, text=black!65, align=left, text width=15.2cm,
-      anchor=north west] at (-1.7,-4.9)
-  {Same password, two unrelated 16-byte values. The lower path discards case and
-   everything past fourteen characters before it hashes anything, so it can only describe a
-   fraction of the inputs the upper path can, and it is stored as a weak second record rather
-   than as another encoding of the same secret. Neither path salts its input.};
+% ---------------- one password, two lanes ---------------------------------
+\node[term] (pw) at (0.6,-1.72) {\texttt{Password1}};
+
+\draw[ar] (pw.east) -- ++(0.4,0) coordinate (fork);
+\draw[ar] (fork) |- (md4.west);
+\draw[ar] (fork) |- (step.west);
+\draw[ar] (md4) -- (nth);
+\draw[ar] (step) -- (des);
+\draw[ar] (des) -- (lmh);
 
 \end{tikzpicture}
-\caption{One password, two stored secrets. The upper path condenses the password exactly; the
-lower path folds case and length first. Because neither is salted, both values are identical on
-every host that holds them for that account.}
+\caption{One password, two stored values: the NT hash and the LM hash.}
 \label{fig:lm-nt}
 \end{figure}

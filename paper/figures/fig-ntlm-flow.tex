@@ -1,0 +1,54 @@
+% Figure: the three NTLM messages, and where a domain account is verified.
+% Used in section 2.3. Names only: the payload of each message is enumerated in
+% the prose. The dashed pair is the Netlogon detour a domain account takes.
+\begin{figure}[htbp]
+\centering
+\small
+\begin{tikzpicture}[
+  ar/.style={-{Stealth[length=2.2mm]}, draw=black!65, thick},
+  dnar/.style={-{Stealth[length=2.0mm]}, draw=black!55, thick, dashed},
+  msg/.style={align=center, font=\footnotesize},
+  life/.style={draw=black!35, thick}
+]
+
+\def\cl{-6.6}
+\def\sv{0}
+\def\dc{6.6}
+
+% lifelines
+\draw[life] (\cl,0.55) -- (\cl,-5.75);
+\draw[life] (\sv,0.55) -- (\sv,-5.75);
+\draw[life,dashed] (\dc,0.55) -- (\dc,-5.75);
+\node[font=\footnotesize\bfseries] at (\cl,0.85) {client};
+\node[font=\footnotesize\bfseries] at (\sv,0.85) {server};
+\node[font=\footnotesize\bfseries] at (\dc,0.85) {domain controller};
+
+% 1 ---------------------------------------------------------------
+\draw[ar] (\cl,-0.45) -- (\sv,-0.45)
+  node[midway, above=2pt, msg] {\textbf{1\quad NEGOTIATE}};
+\fill (\cl,-0.45) circle (1.6pt); \fill (\sv,-0.45) circle (1.6pt);
+
+% 2 ---------------------------------------------------------------
+\draw[ar] (\sv,-1.75) -- (\cl,-1.75)
+  node[midway, above=2pt, msg] {\textbf{2\quad CHALLENGE}};
+\fill (\cl,-1.75) circle (1.6pt); \fill (\sv,-1.75) circle (1.6pt);
+
+% 3 ---------------------------------------------------------------
+\draw[ar] (\cl,-3.05) -- (\sv,-3.05)
+  node[midway, above=2pt, msg] {\textbf{3\quad AUTHENTICATE}};
+\fill (\cl,-3.05) circle (1.6pt); \fill (\sv,-3.05) circle (1.6pt);
+
+% 4 ---------------------------------------------------------------
+\draw[dnar] (\sv,-4.45) -- (\dc,-4.45)
+  node[midway, above=2pt, msg] {\textbf{a\quad Netlogon}};
+\fill (\sv,-4.45) circle (1.6pt); \fill (\dc,-4.45) circle (1.6pt);
+
+% 5 ---------------------------------------------------------------
+\draw[dnar] (\dc,-5.35) -- (\sv,-5.35)
+  node[midway, above=2pt, msg] {\textbf{b\quad verdict}};
+\fill (\sv,-5.35) circle (1.6pt); \fill (\dc,-5.35) circle (1.6pt);
+
+\end{tikzpicture}
+\caption{The three NTLM messages, and the Netlogon detour a domain account takes.}
+\label{fig:ntlm-flow}
+\end{figure}
