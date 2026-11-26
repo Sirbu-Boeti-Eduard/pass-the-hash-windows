@@ -1,0 +1,37 @@
+% Figure: what fraction of servers is still on the release that is losing
+% support. Used in section 1.1. Three separate inventories, one metric.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=9.8cm,
+  xbar,
+  bar width=10pt,
+  y=0.95cm,
+  xmin=0, xmax=26,
+  symbolic y coords={{2003 (2016)},{2012 R2 (2023)},{2016 (2026)}},
+  ytick=data,
+  yticklabel style={font=\footnotesize},
+  xtick={0,5,10,15,20,25},
+  xticklabel style={font=\scriptsize},
+  xlabel={share of servers still on the release (\%)},
+  xlabel style={font=\scriptsize},
+  axis lines*=left,
+  axis line style={draw=black!40},
+  tick style={draw=black!40},
+  enlarge y limits=0.28,
+  nodes near coords,
+  nodes near coords style={font=\scriptsize, text=black!70, anchor=west, xshift=3pt},
+  point meta=explicit symbolic,
+  cycle list={{fill=black!35,draw=black!55}}
+]
+\addplot coordinates {
+  (17.9,{2003 (2016)}) [17.9\%]
+  (20.9,{2012 R2 (2023)}) [20.9\%]
+  (20.3,{2016 (2026)}) [20.3\%]
+};
+\end{axis}
+\end{tikzpicture}
+\caption{\small Share of servers still on the release that is losing support.}
+\label{fig:server-versions}
+\end{figure}

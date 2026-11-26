@@ -1,0 +1,22 @@
+% Figure: what an access token carries. Used in section 2.1.
+% The last row is the argument: there is no field for the proof.
+\begin{figure}[htbp]
+\centering
+\footnotesize
+\setlength{\fboxsep}{7pt}
+\renewcommand{\arraystretch}{1.25}
+\fbox{\begin{tabular}{@{}l@{\hspace{1.6em}}l@{}}
+\multicolumn{2}{@{}l}{\textbf{access token}}\\
+\midrule
+user SID    & \texttt{S-1-5-21-\dots-1105}\\
+groups      & \texttt{Domain Users \textperiodcentered{} Helpdesk}\\
+privileges  & \texttt{SeChangeNotify \textperiodcentered{} SeDebug}\\
+logon SID   & \texttt{S-1-5-5-0-481923}\\
+logon type  & 3 (network)\\
+integrity   & Medium\\
+session     & 1\\
+\bottomrule
+\end{tabular}}
+\caption{What a token carries.}
+\label{fig:token}
+\end{figure}

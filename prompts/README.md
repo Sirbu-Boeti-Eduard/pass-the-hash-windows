@@ -1,8 +1,8 @@
 # Prompts
 
-Working prompts for this essay. Two families: one for drafting academic prose, one for
-stripping AI patterns out of it. Plus a project-specific section writer that binds the
-other two to our outline.
+Working prompts for this essay: one that drafts a section against the outline, one that strips
+AI tells out of what was drafted, and a handoff brief that carries the decisions a new session
+needs before it touches the text.
 
 Keep these under version control so that the writing process itself is reproducible.
 
@@ -11,6 +11,7 @@ Keep these under version control so that the writing process itself is reproduci
 | `academic-writing.md` | Plan, structure, draft and self-review a section against the paper's contract | Adapted from `ai-boost/awesome-prompts` → `prompts/academic_paper_architect.txt` (MIT) |
 | `de-slop.md` | Remove AI tells without changing meaning; flags hollow prose instead of padding it | Adapted from `isatimur/de-slop` (`SKILL.md`, MIT) and `haidrrrry/humanize-ai-writing` |
 | `section-writer.md` | Our own: draft one section of *this* paper only, with the outline, budget and evidence rules baked in | Original |
+| `handoff.md` | Where the draft stands, the house rules, the patterns already rejected, and what to write next | Original |
 
 ## Source repositories
 

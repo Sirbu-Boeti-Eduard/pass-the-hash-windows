@@ -1,28 +1,31 @@
 % ======================================================================
-% 7. RESULTS  (budget: 1.5 pages, mostly tables and figures)
-% Rule: every claim here traces to a named file in poc/evidence/.
-% Negative results are mandatory -- see 7.3.
+% 7. RESULTS
+% Rule: every claim traces to a named file in poc/evidence/. Negative results
+% are mandatory. This chapter is where the log analysis lands.
 % ======================================================================
 \section{Results}
+\unwritten
 \label{sec:results}
 
 \subsection{Success matrix}
-% CLAIM (0.5): technique works or not per protocol, with a one-word reason.
+\unwritten
+% WANT: technique x carrier, pass/fail with a one-word reason.
 % Rows: SMB, WinRM, WMI/DCOM, RDP-restricted, LDAP, MSSQL. Columns: PtH, PtK.
 % A matrix with failures in it is more credible than an all-green one.
 
-\subsection{Captured evidence}
-% CLAIM (0.5): for each scenario, the same event appears on both ends --
-% command outcome, target 4624/4672, DC 4776 or 4768/4769, matching capture.
-% Present one compact figure per scenario: log excerpt beside capture excerpt
-% on a shared timeline.
+\subsection{The same event on both ends}
+\unwritten
+% WANT: per scenario, one compact figure: log excerpt beside capture excerpt on
+% a shared timeline. Command outcome, target 4624/4672, DC 4776 or 4768/4769.
+
+\subsection{Attacker-side timeline}
+\unwritten
+% WANT: what our own tooling recorded, step by step, with the privilege each
+% step needed - from first foothold to last hop. This is the "cost of the
+% chain" section; keep it factual.
 
 \subsection{Boundaries observed}
-% CLAIM (0.4): the four negative results and their causes: local-account
-% token filtering, an account without target privilege, AES-only enforcement
-% blocking PtK, and signing where the session key is unavailable.
-
-\subsection{Cost of the chain}
-% CLAIM (0.3): count the steps and the privileges each step required, from
-% initial foothold to last hop. Frames the synthesis in chapter 10 without
-% editorialising.
+\unwritten
+% WANT: the negative results and their causes: local-account token filtering,
+% an account with no rights on the target, AES-only blocking PtK, and signing
+% where the session key is unavailable.

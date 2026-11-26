@@ -1,36 +1,36 @@
 % ======================================================================
-% 8. DETECTION  (budget: 1.5 pages)
-% Authority: every event ID and field name confirmed against Microsoft
-% documentation before submission. No folklore event IDs.
+% 8. DETECTION
+% Authority: every event ID and field confirmed against Microsoft docs before
+% submission. No folklore event IDs.
 % ======================================================================
-\section{Detection}
+\section{Reading the Logs}
+\unwritten
 \label{sec:detection}
 
-\subsection{Host telemetry that matters}
-% CLAIM (0.6): five events carry the whole story.
-% 4624 type 3/9 with NTLM as the package -- and the fields worth alerting on
-% (workstation name vs source IP mismatch; logon with no preceding
-% interactive session). 4672 following a type-3 logon. 4776 on the DC and how
-% it differs from 4624. 4768/4769 with cipher for the PtK side. 4648 as the
-% baseline comparator that shows what "normal" explicit-credential use is.
+\subsection{The five events that carry the story}
+\unwritten
+% WANT: 4624 type 3/9 with NTLM as the package, and the fields worth alerting
+% on (workstation name vs source IP mismatch, no preceding interactive logon);
+% 4672 following a type 3; 4776 on the DC and how it differs from 4624;
+% 4768/4769 with the cipher for the PtK side; 4648 as the "normal" comparator.
 
 \subsection{What the attack cannot hide}
-% CLAIM (0.3): the target always logs a successful network logon and the DC
-% always validates it; the attacker controls neither. Detection is therefore
-% baselining who logs on where with NTLM, not signature matching. This is the
-% structural weakness of the whole family.
+\unwritten
+% WANT: the target always logs a successful network logon and the DC always
+% validates it; the attacker controls neither. Detection is baselining who
+% logs on where with NTLM, not signature matching.
 
 \subsection{Network-level signals}
-% CLAIM (0.2): NTLMSSP visible wherever the carrier is unencrypted;
-% Negotiate downgrade as a corroborating sign; NTLM auditing on the DC as the
-% cheapest visibility win available.
+\unwritten
+% WANT: NTLMSSP in the clear wherever the carrier is unencrypted; Negotiate
+% downgrade as corroboration; NTLM auditing on the DC as the cheapest win.
 
-\subsection{Behavioural and deception controls}
-% CLAIM (0.2): honeytoken accounts and canary credentials in LSASS -- any use
-% is high signal and near-zero false positive. One line on what an EDR sees
-% when LSASS memory is read.
+\subsection{Canaries and EDR}
+\unwritten
+% WANT: honeytoken accounts and decoy credentials in LSASS - any use is high
+% signal, near-zero false positive. One line on what an EDR sees on LSASS read.
 
-\subsection{From telemetry to a rule}
-% CLAIM (0.2): turn 8.1 into one concrete rule with its false-positive story,
-% then report how it fired against our own attack traffic. This is the
-% section that proves we can operationalise what we found.
+\subsection{From telemetry to one rule}
+\unwritten
+% WANT: turn the above into a single rule with its false-positive story, then
+% report how it fired against our own attack traffic.

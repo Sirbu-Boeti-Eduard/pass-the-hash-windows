@@ -1,90 +1,111 @@
 % ======================================================================
-% 1. INTRODUCTION  (budget: 1.5 pages)
+% 1. INTRODUCTION
+% Reader: a pentester who has dumped hashes or run a relay and wants the
+% mechanism underneath. Academia gets one paragraph, not a framing chapter.
+% Structure: claim in the preamble (no subsection), then why it matters to
+% this reader, then what the article delivers, then scope.
 % ======================================================================
 \section{Introduction}
 \label{sec:intro}
 
-\subsection{Motivation}
+Windows does not check your password. It checks whether you can produce a proof that only the
+password's holder could produce, and both protocols in this article let the client produce that
+proof locally. NTLMv2 sends a response computed from a key that never crosses the wire. Kerberos
+sends a timestamp encrypted under the same kind of key. A server that accepts either cannot tell
+whether the client typed the password a minute ago or read the key out of memory last week.
 
-Microsoft now lists NTLM, including NTLMv2, among the deprecated features of the
-Windows client \cite{ms-deprecated-features}. Deprecation is not removal. The
-protocol stays negotiable on every supported release, and the carriers are
-numerous: SMB, MSRPC, WinRM, LDAP, MSSQL, and HTTP through Negotiate
-\cite{ms-ntlm-overview}. An estate that has standardised on Kerberos for
-interactive logon still accepts NTLM from a machine account, an application
-service, or a legacy appliance.
+The key is the NT hash: sixteen bytes, MD4 over the password, no salt and no host component.
+NTLM consumes it directly, and so does Kerberos when RC4 is negotiated. Possession is therefore
+enough. Nothing has to be cracked, no captured response has to be replayed, and no protocol has
+to be broken. Pass-the-hash and pass-the-key are one primitive pointed at two protocol families.
 
-NTLMv2, the version still negotiated in practice, is not broken. A recorded
-exchange supports an offline attack against the response, and what such an
-attack recovers is the password, from which the hash follows; the hash itself
-never crosses the wire. The response computation survived scrutiny intact: a
-server challenge, a per-attempt client value, and a key that stays on the host.
-The attacks that matter therefore leave the computation alone. They read the key
-from the host that stores it and compute the next response locally, which is the
-credential-theft model in Microsoft's mitigation guidance and the technique
-catalogued as pass-the-hash
-\cite{microsoft-2014-pth,ewaida-2010-pth,mitre-t1550-002}. An environment can
-disable LM, require NTLMv2, enforce SMB signing and still lose a domain, because
-none of those settings govern what LSASS retains in memory during a logon.
+\subsection{Why a pentester should care}
+\label{sec:why-care}
 
-Kerberos does not close the gap. Active Directory still accepts RC4-HMAC
-tickets keyed by the NT hash itself, so an environment that has switched NTLM
-off by policy is not thereby protected \cite{ms-kile,ms-restrict-ntlm}.
-Multi-factor authentication at the perimeter covers the services that terminate
-it, not the file share that accepts a response from a workstation.
+Enterprise identity is still mostly a Windows account, and the layering is why. Workgroups let a
+handful of machines share files without a server. Windows NT 3.1 added domains and NTLM in 1993
+\cite{ms-ntlmless-faq}. Windows 2000 added Active Directory, Kerberos~v5 and Certificate Services
+in a single release \cite{windows-internals}. Azure AD reached general availability in April 2013
+and was renamed Entra ID in July 2023 \cite{rcp-2013-waad,ms-entra-rename}. None of these layers
+was removed, and Figure~\ref{fig:auth-timeline} lines the dates up.
 
-A single workstation yields a key that is frequently valid on a neighbouring
-host, and using it requires no exploit, only a client willing to speak the
-protocol. Intrusions of this shape appear in the
-later stages of major campaigns, where credential theft and exploitation are
-used together rather than one instead of the other \cite{uscert-ta17-181a}.
-Removing the compromised host from the network changes nothing about the key,
-which remains valid wherever it is accepted.
+\input{figures/fig-auth-timeline}
 
-\subsection{Problem statement}
+NTLM is deprecated, and Microsoft's stated target is to disable it by default in the next major
+release of client and server, not to delete it \cite{ms-ntlmless-faq}. In-market versions keep
+accepting it, and the installed base explains why. Figure~\ref{fig:server-versions} counts servers
+still on the release that is about to lose support: 17.9\% on Windows Server 2003 eleven months
+after its patches stopped, 20.9\% on 2012~R2 five weeks before the deadline, and 20.3\% on Server
+2016 ten months before January 2027 \cite{register-2026-server2016,techzine-2023-server2012}.
+Three inventories from two vendors, and the same fraction each time. An engagement meets the
+protocol generation of the estate, not of the current release.
 
-This paper defends one sentence: because NTLM and Active Directory Kerberos
-both let a client complete authentication locally from a derived key held on the
-host, disclosure of that key is equivalent to disclosure of the account,
-independent of password strength and of transport encryption. Both protocols
-prove possession of a key rather than knowledge of a password. The password is
-one way to obtain the key and, once the key is obtained, it stops being
-relevant. Transport encryption protects the exchange, not the copy at
-rest. Pass-the-hash and pass-the-key are not exploits in the ordinary sense;
-they are the protocols executed as specified, with a different source for the
-key.
+\input{figures/fig-server-versions}
 
-\subsection{Contributions}
+Internal traffic has the same shape. Across 312 enterprise environments over a one-month window,
+43.2\% of observed authentication still used NTLM (Figure~\ref{fig:auth-mix})
+\cite{zeronetworks-2026}. That is one vendor's telemetry rather than a census, and it is the
+closest thing to a public NTLM-versus-Kerberos ratio that exists: the remainder is Kerberos,
+local-account logons and cloud token exchange, not a clean split between two protocols. The
+intent is not missing either. Microsoft names visibility as the top blocker to turning NTLM off,
+because an administrator cannot disable what they cannot locate \cite{ms-ntlmless-faq}. The cloud
+did not replace the directory, it federated with it, and 54\% of enterprise workloads ran in
+public cloud in 2026, leaving 46\% that did not \cite{flexera-2026}.
 
-\begin{enumerate}[label=\arabic*.]
-\item \textbf{Where the key lives.} Chapters~\ref{sec:background} and~\ref{sec:framing} establish that Windows
-  authority travels in the access token, that the same token can be produced
-  from key material stored on the host, and that every pass-the-X technique is
-  an instance of one property: the authenticator is whatever secret the
-  protocol's proof can be computed from.
-\item \textbf{Why this is not replay.} Chapter~\ref{sec:pth} derives the response
-  computation and shows that replay protection cannot answer an attempt
-  computed from the key, because each attempt is fresh and bound to the
-  server's challenge. It also separates what SMB signing defends from
-  what it does not.
-\item \textbf{A reproducible demonstration.} Chapters~\ref{sec:poc} and~\ref{sec:results} present a
-  three-host lab in which we demonstrate pass-the-hash over SMB and
-  WinRM and pass-the-key to a TGT, with evidence captured on
-  both ends of each connection. Success is recorded as a log line rather than
-  asserted.
-\item \textbf{Controls measured, not listed.} Chapter~\ref{sec:mitigation} reports before-and-after
-  outcomes for the controls that break the chain, including Credential Guard and
-  the Protected Users group, and distinguishes those that change the evidence
-  from those that only change a policy setting
-  \cite{ms-credential-guard,ms-protected-users}. Chapter~\ref{sec:synthesis} states the
-  conditions under which attempts fail in practice.
-\end{enumerate}
+\input{figures/fig-auth-mix}
 
-The lab definition and the captured output are in the accompanying repository.
+On an engagement, that decides which layer answers. A host that still accepts NTLM turns a hash
+into a logon. A domain that still issues RC4 tickets turns the same bytes into a TGT. A domain
+that has removed both ends the chain, and only that class of control does
+(Chapter~\ref{sec:mitigation}).
+
+\subsection{What this article gives you}
+\label{sec:what-you-get}
+
+This is written for people who run the tools: pentesters moving into internal Windows work,
+students who have read the Active Directory chapter once, and the Linux admin who wants a real
+answer to why the Windows estate keeps winning arguments. None of it needs a course in
+cryptography. All of it assumes you can read a packet capture and a log.
+
+The first half fast-tracks what the attack rests on: where Windows stores keys, how a password
+becomes one, which logon type leaves what behind, and why both protocols accept a proof computed
+on the client. It goes a little past the minimum, because a technique you can only run when the
+target behaves as expected is not one you understand.
+
+The second half is the work: a lab you can rebuild, three scenarios, the logs both ends produce,
+and the controls that stop each step. Read it as a fast track all the same. Pass-the-hash is one
+move in an estate built from DNS, Group Policy, certificate services, delegation and file-share
+ACLs, and most of those will matter more on a given day. It is also the move most tightly
+associated with Windows intrusions, and the one that keeps working after the obvious hardening.
+
+The proof of concept ships as skills rather than scripts, and that is a position. AI has made
+writing a script cheap, which mostly underlines how expensive maintenance is. A tool somebody
+wrote in an afternoon is a liability the moment the target stops behaving as expected, and the
+tools that already work are community tools, maintained by people who will still be fixing them
+next year. We are not going to compete with them, and neither is the average engagement. What we
+add is the part a script cannot hold: judgement on top of a fixed procedure. The tools do the
+work. The skill decides which tool, with which options, against which precondition, and what the
+result actually means. A human reviews all of it; the skill is a checklist with judgement, not an
+autonomous operator.
+
+If that reads as a soft case for agents, put it in front of the pentester covering a few hundred
+machines in an internal engagement. Spraying one hash across the subnet returns \texttt{valid} on
+a hundred hosts and executes on almost none, because the account authenticated and still had no
+rights on the target. Working out which host is which, by hand, is where the day goes. That
+sorting is the work a skill does, which is why this one is written down.
 
 \subsection{Scope and non-goals}
+\label{sec:scope}
 
-The scope is pass-the-hash and pass-the-key on Windows and Active Directory: two techniques
-consuming one primitive, both demonstrated and both measured. Protocol cryptanalysis is out of
-scope, and deliberately so. The paper takes NTLM and Kerberos as specified and argues that
-neither has to be broken for either technique to succeed.
+Two techniques, not the whole family. Pass-the-hash consumes the NT hash over NTLM, and
+pass-the-key consumes the same sixteen bytes over RC4 Kerberos. The rest of the family has the
+same shape with different material: pass-the-ticket replays a TGT or a service ticket,
+pass-the-certificate uses the private key behind an enrolled certificate in place of a password,
+and pass-the-PRT replays a Primary Refresh Token from a hybrid-joined device. Each brings its own
+protocol surface and its own controls, and each is out of scope here. Protocol cryptanalysis is
+out of scope too: both protocols are used exactly as specified, which is the point.
+
+The lab is a playground, not a template. Nothing in it is hardened and nothing should be lifted
+into production; it exists so the skills have a surface to act against and so both ends of a
+connection can be read side by side. The deliverable is the skill that drives a maintained tool,
+not the VM and not a script of our own.

@@ -1,156 +1,251 @@
 % ======================================================================
-% 2. BACKGROUND  (budget: 4.0 pages -- the heaviest chapter)
-% Job of the chapter: after this, the reader can follow chapter~\ref{sec:pth} without a
-% glossary. Order is deliberate: account -> secret -> derivation -> protocol
-% -> carriage. Each subsection introduces exactly the vocabulary the next
-% attack chapter will reuse.
+% 2. BACKGROUND
+% Job: the minimum systems theory a pentester needs to reason about the
+% attack and to defend every claim in it. Order matters:
+% orientation -> identity -> secret -> derivation -> protocol -> carrier
+% -> what is left behind.
 % ======================================================================
-\section{Background: Windows Authentication from Zero}
+\section{Background: How Windows Authenticates}
 \label{sec:background}
 
-The sections below follow the construction of a Windows session, from account to secret to
-derivation to proof to transport, and they fix the terms later chapters use without redefining
-them. Two questions recur throughout: which store yields a secret a protocol will accept, and
-which kind of logon leaves material behind on the host.
+Three things have to line up before any of this makes sense: a secret, a protocol that accepts it,
+and a service that will take the protocol's word for it.
 
-\subsection{Accounts, SIDs and the access token}
+Two values sit in an account record and they are not interchangeable. The \textbf{NT hash} is MD4
+over the UTF-16LE password: sixteen bytes, no salt, no iteration count, and identical on every
+machine for the same password. The \textbf{LM hash} is the older construction, the password
+uppercased, cut to fourteen characters, split into two seven-byte halves and used as DES keys. It
+is absent by default on current systems and gives you nothing the NT hash does not. When this
+article says ``the hash'', it means the NT hash.
 
-Two account databases matter. The SAM file on every workstation and member server holds local accounts; on a domain controller, the domain database in \texttt{NTDS.dit} sits beside it. Both name an account by a security identifier, a domain or machine SID together with a relative identifier, and the identifier rather than the name is what every later decision uses. Figure~\ref{fig:sam-record} shows one record and decomposes the identifier it carries.
+Two protocols consume it. \textbf{NTLM} is challenge-response: the server sends a challenge, the
+client computes a response from the hash, the server checks that response against its own copy.
+\textbf{Kerberos} is ticket-based: the client asks a KDC, which on a domain is a domain
+controller, for a ticket, and under RC4-HMAC the key it proves possession with is the NT hash
+itself. Neither puts the hash on the wire. A captured exchange is something to crack offline, not
+something to log in with.
 
-\input{figures/fig-sam-record}
+A hash or a ticket is worth only what accepts it, and Windows spreads that acceptance over a set of
+services rather than one remote-access protocol. Table~\ref{tab:services} lists the ones an
+engagement meets, what each is for, and what a valid logon buys there.
 
-A successful logon produces an access token, and the token is the object that authority travels in. It records the user SID, the group SIDs, the privileges held, the logon SID, the logon type, the integrity level and the session identifier. The security reference monitor attaches it to a process or impersonation thread, and each access check compares it against the security descriptor of the object being opened. No check returns to the credential store; the password is not consulted again while the token lives.
-
-Because the token records identity and authorisation data rather than the method of proof, a logon satisfied with derived key material yields the same SIDs, groups and privileges as one made with the password. The authentication package does not record its evidence in the token. Any value from which a package can compute a valid proof is therefore, for the purpose of obtaining a token, the password.
-
-\subsection{Where Windows keeps secrets}
-
-\subsubsection{LSASS as the credential-bearing process}
-
-\texttt{lsass.exe} (LSASS) hosts the local security authority and the packages that implement the protocols in this chapter: \texttt{msv1\_0} for NTLM, the Kerberos package, and the Negotiate dispatcher between them~\cite{windows-internals}. To spare repeated password entry, it retains material after the logon completes: the NT hash for an interactive session, Kerberos tickets with their session keys, and in some configurations the plaintext. It runs as SYSTEM and, where LSA protection is enabled, as a protected process light; reading its memory then requires administrative rights plus debug privilege, a kernel driver, or a dump from a component that already holds them. Removing material at logon is the mechanism behind several controls in chapter~\ref{sec:mitigation}, of which the Protected Users group is the clearest example~\cite{ms-protected-users}.
-
-\subsubsection{Local and domain stores}
-
-The stores differ in content and in whether that content serves as an authenticator. The SAM hive holds local account records, each with an NT hash and, where a legacy value survives, an LM hash; it is readable offline from the registry files or a volume shadow copy by an administrator, and the hashes are directly usable. The SECURITY hive holds LSA secrets: the machine account password, service account passwords retained for start-up, and the DPAPI system master keys. Its contents are often plaintext or reversibly protected, so it yields credentials rather than hashes. On a domain controller, \texttt{NTDS.dit} holds the domain accounts and their NT hashes, the densest source in an estate. DPAPI protects application secrets with master keys derived from the password; the system master keys in the SECURITY hive protect the user keys. It protects data at rest and produces nothing an authentication protocol accepts, so a master key is a target in its own right, not pass-the-hash material.
-
-The two values in a local record are unrelated, and the difference is worth seeing once. Figure~\ref{fig:lm-nt} sends the same password down both paths: the NT hash over the password as typed, the LM hash over an uppercased, truncated copy of it.
-
-\input{figures/fig-lm-nt}
-
-Cached domain credentials occupy a separate store and are widely misread. When a user logs on while the domain controller is unreachable, the logon is verified against a cached verifier: the password hashed with the account name as salt and iterated many times, held as MSCache v2 data. Salt and iteration make the value expensive to attack and useless for another account. A cached credential cannot be turned into an NT hash, cannot key an NTLM response, and is not a source of material for the techniques in chapter~\ref{sec:pth}. WDigest is the historical case: for a period it retained the plaintext password in \texttt{lsass.exe} alongside the hash, so memory acquisition yielded the password; Windows 8.1 and Windows Server 2012 R2 and later disable that retention by default, through a registry value that one legacy domain policy can restore on every host that applies it \cite{ms-advisory-2871997}.
-
-\subsection{From password to key material}
-
-\subsubsection{The NT hash}
-
-The NT hash is the MD4 digest of the password encoded as UTF-16LE, computed in a single pass with no salt and no iteration count~\cite{ms-nlmp}. Its length is sixteen bytes. The same bytes appear in the SAM database of a local account, in \texttt{NTDS.dit} for a domain account, and in \texttt{lsass.exe} for an interactive logon: three computations of one function over one input. Nothing varies by host, domain or time, so a hash disclosed once stays valid until the password changes.
-
-Calling this a hashed password invites the wrong model. A password hash in a well-built store is an artefact designed to be slow to attack and useless as a credential; the NT hash is designed to be fast, because every logon recomputes it, and two protocols consume it directly as a key. With no per-host key, version identifier or parameter set, there is no key management at all.
-
-The LM hash is a separate and older construction. It uppercases the password, truncates to fourteen characters, splits the result into two seven-byte halves and encrypts a fixed string with each half as a DES key. It is absent by default on current systems; when present it is a second, weaker value in the same record, not another encoding of the NT hash. Figure~\ref{fig:lm-nt} puts the two paths side by side.
-
-\subsubsection{The derivation tree}
-
-Every authentication secret in the rest of the paper descends from the password along one of three branches, shown in Figure~\ref{fig:hash-derivation}. The first runs from the password to the NT hash and from the hash to the NTLM response. The second runs from the same hash to the RC4-HMAC Kerberos long-term key. The third runs from the plaintext to the AES128 and AES256 keys through a salted string-to-key function, bypassing the hash entirely. The asymmetry bounds every technique in the paper: disclosure of the hash reaches two branches and stops at the third.
-
-\subsection{NTLM: challenge-response}
-
-\subsubsection{The three message types}
-
-NTLM exchanges three messages, named by type number in~\cite{ms-nlmp}. \texttt{NEGOTIATE} advertises the client's capabilities, requested dialect, domain and workstation. \texttt{CHALLENGE} returns the server's capabilities, an eight-byte server challenge and a target information block naming the server's domain and carrying a timestamp in current dialects. \texttt{AUTHENTICATE} carries the account name, the domain, one or more responses and, when key exchange is negotiated, an encrypted session key.
-
-The server holds no secret belonging to the user and never receives the hash; it receives a response computed over a challenge it chose, and it verifies that response. For a domain account the server passes the exchange to Netlogon and the domain controller compares, because only the domain controller holds the account's hash; for a local account the server compares against its own SAM. In both cases the value that proves the identity stays with the party that already stores it.
-
-\subsubsection{NTLMv1 versus NTLMv2}
-
-In NTLMv1 the response is a function of the hash and the server challenge alone. The sixteen
-bytes of the NT hash are split into three seven-byte keys, each padded to eight, and the
-eight-byte challenge is encrypted with each under single DES; the three ciphertexts concatenate
-to twenty-four bytes. The computation is deterministic, and two responses to the same challenge
-are identical.
-
-NTLMv2 replaces it with a keyed hash over a structure the client assembles. Three values matter
-for what follows. A \emph{response key} is derived from the NT hash by a second HMAC, which binds
-it to the account name and the domain, so a hash from one domain does not key a response for the
-same name in another. A \emph{temp block} carries a version, a timestamp, a client challenge and
-the target information the server supplied. The \emph{proof} is an HMAC of the response key over
-the server's challenge and that block, and it is the value the server tests. Section~\ref{sec:pth}
-gives the exact construction of all five values; what matters here is who chooses them.
-
-Almost every field in the block is the client's, including the timestamp and a fresh challenge.
-Each attempt therefore produces a different proof, bound to the server's challenge of that
-moment. The artefact that crosses the wire is NetNTLMv2, the challenge together with the response.
-It is not the NT hash and cannot be used as one: a captured exchange is a candidate for offline
-guessing, not a key for the attacks in chapter~\ref{sec:pth}.
-
-\subsubsection{Session key derivation}
-
-After verification the session key is \texttt{SessionBaseKey}, or the result of exchanging a random key under it when key exchange is negotiated~\cite{ms-nlmp}. The key exchange field of \texttt{AUTHENTICATE} carries a random value encrypted with \texttt{SessionBaseKey}, and that value becomes the session key. Signing and sealing keys derive from it, so they are functions of \texttt{ResponseKeyNT} and the proof, and the NT hash suffices for every key that protects the connection. Message signing authenticates each message; it adds no secret to a party able to derive the same key. Figure~\ref{fig:ntlm-flow} places the messages against the key material each carries.
-
-\subsection{Kerberos in Active Directory}
-
-\subsubsection{KDC, tickets and the PAC}
-
-Kerberos in Active Directory follows RFC~4120~\cite{rfc4120} with the extensions in~\cite{ms-kile}. The client sends an \texttt{AS-REQ} to the key distribution centre, which on a domain controller is hosted by the krbtgt account. \texttt{AS-REP} returns a ticket-granting ticket encrypted under the krbtgt key and a session key for client and KDC encrypted under the client's long-term key. A \texttt{TGS-REQ} presents the ticket and an authenticator; \texttt{TGS-REP} returns a service ticket encrypted under the service account's long-term key, with a fresh session key.
-
-Four messages, four different keys, and prose makes it easy to lose track of which is which. Figure~\ref{fig:kerberos-flow} reduces the exchange to four arrows and states the key protecting each one.
-
-\input{figures/fig-kerberos-flow}
-
-The addition that makes AD Kerberos more than RFC~4120 is the \emph{privilege attribute certificate}. The PAC carries the user's SID, group memberships and logon hours inside the ticket and is signed by the KDC, so a service trusts it without querying a directory. RFC~4120 leaves authorisation to the service; the PAC moves it into the ticket~\cite{ms-kile}.
-
-\subsubsection{Pre-authentication}
-
-Before issuing a ticket-granting ticket, the KDC usually requires proof that the client holds the account's long-term key. The proof is \texttt{PA-ENC-TIMESTAMP}: the current time encrypted under that key, carried in the pre-authentication field of the \texttt{AS-REQ}~\cite{rfc4120}. The KDC decrypts with the key it holds and checks the timestamp. Nothing secret crosses the network; the KDC needs only the derived key. This is the single message in which a long-term key becomes a session, and a party holding only the key can produce it. Where pre-authentication is disabled, \texttt{AS-REP} is encrypted under the user's key and can be attacked offline~\cite{ms-kerberos-overview}.
-
-\subsubsection{Encryption types and what keys them}
-
-Kerberos names its algorithms by encryption type. For RC4-HMAC, etype \texttt{0x17}, the long-term key is the NT hash itself, with no derivation between the two values. For AES128-CTS-HMAC-SHA1-96 and AES256-CTS-HMAC-SHA1-96, etypes \texttt{0x11} and \texttt{0x12}, the key is derived from the plaintext password through a salted string-to-key function, and the NT hash plays no part. The consequence is plain and chapter~\ref{sec:ptk} develops it: the sixteen bytes that satisfy NTLM also satisfy RC4 pre-authentication and do not satisfy AES. A domain that refuses RC4 removes the Kerberos path from a hash holder while NTLM remains wherever it is accepted. Figure~\ref{fig:kerberos-flow} marks which key protects each leg of that path.
-
-\subsection{Which protocols carry which authentication}
-
-Windows has no single remote-access protocol; it has several, and the overlap between them is the result of accretion rather than of a plan. Each was built for a different job and arrived with its own transport:
-
-\begin{itemize}[leftmargin=1.4em]
-\item \textbf{SMB} shares files and printers. It is the oldest of the group, predates the domain, and carries named pipes as well as file access, which is why administrative tooling has always been able to reach a machine through it.
-\item \textbf{MSRPC} calls procedures on another machine as though they were local. It is the generic remote-execution substrate underneath a great deal of Windows itself, listening on the endpoint mapper at 135 and then a negotiated dynamic port.
-\item \textbf{WMI} is an instrumentation model for querying and changing the operating system, exposed through the same DCOM and RPC machinery. It is what a management console talks to when it asks a host what is installed or starts a process on it.
-\item \textbf{WinRM} carries management requests as HTTP, on 5985 or 5986. It exists because firewalls permit those ports and do not permit RPC's dynamic range, so it reaches hosts that RPC cannot.
-\item \textbf{RDP} carries an interactive session with a desktop in it, and is the only one of the six that a person sits in front of.
-\item \textbf{LDAP} asks a directory questions. On a domain it is the main read path to the domain database, and on a domain controller it is the same data the KDC reads.
-\end{itemize}
-
-Each protocol does far more than its name suggests, and the capabilities overlap: a file can be written over SMB, a process started over MSRPC or WMI, a command run over WinRM, and a desktop opened over RDP. Where one path is filtered, another usually survives; choosing between them changes the preconditions and the logs, not the outcome.
-
-What all six share is the authentication layer. None of them implements its own credential check. Each negotiates authentication as an opaque token during its own connection setup, and most use SPNEGO, which prefers Kerberos and falls back to NTLM when no service ticket is available~\cite{ms-ntlm-overview}. The fallback is a policy property of the host, not of the transport, which is how one service is Kerberos-only in one estate and NTLM-accepting in another. Table~\ref{tab:carriers} records the default and whether a restriction exists.
+Each of these borrows the same authentication layer, which is why one hash reaches all of them and
+why blocking a port moves the path rather than closing it.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Authentication carriage by protocol. The last column distinguishes services with a switch of their own from those that depend on host-wide policy.}
-\label{tab:carriers}
-\begin{tabular}{@{}L{4.3cm}L{3.4cm}L{3.0cm}L{4.0cm}@{}}
+\renewcommand{\arraystretch}{1.25}
+\caption{Services, and what a valid logon buys on each.}
+\label{tab:services}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}m{2.2cm}>{\raggedright\arraybackslash}m{2.6cm}>{\raggedright\arraybackslash}m{4.2cm}Y@{}}
 \toprule
-Protocol & Default mechanism & NTLM accepted & Can be restricted \\
+Service & Port & What it is for & A valid logon buys \\
 \midrule
-SMB & \texttt{Negotiate} & Yes & Yes, by policy \\
-MSRPC endpoint mapper & NTLM & Yes & Partly \\
-WinRM & \texttt{Negotiate} & Yes & Partly \\
-WMI/DCOM & NTLM & Yes & Partly \\
-RDP & \texttt{Negotiate} (NLA) & Yes & Partly \\
-LDAP & \texttt{Negotiate} & Yes & Partly \\
-MSSQL & NTLM & Yes & No server switch \\
-HTTP & \texttt{Negotiate} & Yes & Per application \\
+\rowcolor{gray!7} SMB & 445 & files and printers & share access, and execution via the service control manager \\
+\addlinespace[3pt]
+\rowcolor{white} MSRPC & 135 + dynamic & remote procedure calls & service creation, scheduled tasks, DCOM \\
+\addlinespace[3pt]
+\rowcolor{gray!7} WMI & over MSRPC & system management & process creation, queries \\
+\addlinespace[3pt]
+\rowcolor{white} WinRM & 5985, 5986 & management over HTTP & command execution without a share \\
+\addlinespace[3pt]
+\rowcolor{gray!7} RDP & 3389 & an interactive desktop & a desktop session \\
+\addlinespace[3pt]
+\rowcolor{white} LDAP & 389, 636 & directory queries & reads, and the writes its ACL allows \\
+\addlinespace[3pt]
+\rowcolor{gray!7} MSSQL & 1433 & a database & queries; \texttt{xp\_cmdshell} with sysadmin \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
-The last column is coarser than it looks. Restricting NTLM is largely a host-wide policy decision covering outbound use and, in its blocking form, inbound acceptance; only some services expose a switch of their own~\cite{ms-ntlm-overview}. A partly restrictable service therefore depends on a decision that applies to the whole host, so every legacy application there loses NTLM too.
+NetBIOS is the layer people misplace. It is a session and naming interface from the LAN Manager
+era, not an authentication protocol: SMB once rode on it over TCP 139, and modern SMB runs
+directly on 445. What survives is the name service, which is why NBT-NS spoofing still works on
+networks that have moved on everywhere else, and why LLMNR, the protocol that took the same job
+over, deserves the same treatment.
 
-\subsection{Logon types and the token lifetime problem}
+\subsection{Accounts, SIDs, and the access token}
+\label{sec:accounts}
 
-Windows labels each logon with a type, and the type determines what the authenticating host retains~\cite{windows-internals}. Type~2 is an interactive logon at the console: credentials are verified there or, for a domain account, by the domain controller, and the token is attached to the user's session. Type~10 is a remote interactive logon, the RDP case, which behaves like type~2 for retention: the target verifies the credentials and its \texttt{lsass.exe} holds what the logon produced. Type~9, NewCredentials, created by \texttt{runas /netonly}, builds a separate logon session whose credentials serve outbound connections while the process keeps its local token.
+Windows keeps two account databases, and they store the same kind of record. The SAM hive on every
+workstation and member server holds the local accounts; \texttt{NTDS.dit} on a domain controller
+holds the domain's. Both key an account by a security identifier, a domain or machine SID followed
+by a relative identifier, and both keep the account's NT hash beside it
+(Figure~\ref{fig:two-stores}). The name is only how people refer to the account. The SID is what
+every access check, ACL entry and log line uses, which is why renaming an account changes nothing
+and recreating one produces a different identity.
 
-Type~3 is the network logon, on which the rest of the paper depends. Credentials are presented to a remote service inside that service's authentication exchange; the service verifies them, with the domain controller where necessary, and issues a token for the duration of the connection. Nothing on the target is written to a credential store, because the target never held a secret to store: it held a challenge and a response. The token and logon session last as long as the connection, and no reusable material survives them.
+\input{figures/fig-two-stores}
 
-Two consequences follow. A successful pass-the-hash leaves no hash on the host it authenticates to, so the technique transports an existing privilege rather than establishing a foothold, and persistence needs a separate mechanism. The material must also be carried by the party authenticating, which is why chapter~\ref{sec:pth} separates speaking the protocol at a distance from writing the hash into a local \texttt{lsass.exe}. The first is a network logon end to end. The second creates a new logon session locally, type 9, the same shape as \texttt{runas /netonly}, and lets Windows perform the network logon from it, which leaves a different footprint at both ends.
+A handful of relative identifiers are fixed, and worth recognising on sight:
+
+\begin{itemize}[leftmargin=1.6em]
+  \item \textbf{500} --- the built-in Administrator, on a workstation and on a domain alike.
+  \item \textbf{501} --- Guest.
+  \item \textbf{502} --- krbtgt, the account whose key encrypts every ticket-granting ticket.
+  \item \textbf{512} --- Domain Admins.
+  \item \textbf{513} --- Domain Users.
+  \item \textbf{515} --- Domain Computers.
+\end{itemize}
+
+Everything else starts at 1000 and is issued in order, so the RID of a service account tells you
+roughly when it was created.
+
+The logon itself is run by LSASS. \texttt{lsass.exe} is a user-mode process, and the LSA is the
+subsystem inside it rather than a second process. The subsystem holds the policy engine, the audit
+trail and the table of logon sessions, and builds a token when authentication succeeds. It also
+loads the LSA-side instance of each authentication package as a DLL, \texttt{msv1\_0} for NTLM and
+the Kerberos package among them, together with the code that reads SAM and the SECURITY hive
+(Figure~\ref{fig:lsa-stack}). Callers reach those packages through SSPI, which presents the same
+interface to \texttt{winlogon.exe}, to a service, and to your shell.
+
+\input{figures/fig-lsa-stack}
+
+A successful logon produces an access token, and the token is what authority travels in. It
+records the user SID, the group SIDs, the privileges held, a logon SID that identifies the logon
+session, the logon type, the integrity level and the session ID (Figure~\ref{fig:token}). The
+Security Reference Monitor compares that token with the security descriptor of the object being
+opened, and it runs in kernel mode, so the check happens where no process can skip it. It does not
+consult the credential store, and it does not ask which package authenticated the caller.
+
+\input{figures/fig-token}
+
+That split is deliberate, and it is the opposite of a web application. A web server authenticates
+you once, hands back a session identifier, and looks the identifier up on every later request.
+Steal the identifier and you hold the session, but the server can also kill it. Windows made the
+other trade. An access check happens locally, thousands of times a second, and cannot be a
+network round trip, certainly not in 1993 when the model was set. So the decision is cached at
+logon: identity, groups and privileges are frozen into an object that any process can be checked
+against without touching a directory. The cost is that there is no session to revoke. Disabling an
+account does not invalidate a token already issued; it keeps working until the session ends.
+
+The argument of this article reduces to that sentence. The token records who you are and what you
+may do, and nothing in it records how you proved it. A logon completed with a hash produces the
+same SIDs, the same groups and the same privileges as one completed with the password, because the
+package tests possession and the question is then closed. There is no field for NTLM, for Kerberos
+or for a password. For authorisation, a hash and a password are the same object.
+
+One adjacent technique deserves a name so the boundary is clear. A process can hold an
+impersonation token and act as another user for the lifetime of a thread, which is ordinary
+service design and also a way to borrow someone's rights after a compromise. It consumes a live
+token rather than a key, it depends on what the engagement hands you, and it is not what this
+article is about. The token is the result; what follows is about the key that produces it.
+
+\subsection{Where the hash lives}
+\label{sec:hash-lives}
+
+Section~\ref{sec:accounts} covered the databases. Between those and the attack sit four other
+places a credential turns up, and they are routinely confused with one another
+(Table~\ref{tab:copies}).
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\caption{The four places a credential turns up, and what each gives you.}
+\label{tab:copies}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}m{2.7cm}>{\raggedright\arraybackslash}m{5.0cm}>{\raggedright\arraybackslash}m{1.7cm}Y@{}}
+\toprule
+Element & What it is & Hash? & What it gives you \\
+\midrule
+\rowcolor{gray!7} LSASS & the process that runs logons and keeps live session secrets & yes &
+  the NT hash of every account with a session open \\
+\addlinespace[3pt]
+Cached domain credentials & offline verifier used when the domain controller is unreachable & no &
+  a salted, iterated verifier: crackable, not replayable \\
+\addlinespace[3pt]
+\rowcolor{gray!7} WDigest & legacy package that cached the password for single sign-on & plaintext &
+  the password itself, if a policy re-enables it \\
+\addlinespace[3pt]
+Credential Manager & the user's saved-credential vault & no &
+  saved passwords, once DPAPI is unlocked \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+LSASS keeps a hash per live session, so the dump is worth taking on a host where an administrator
+has signed in and worth nothing after a reboot. Reading it takes one of three things:
+
+\begin{itemize}[leftmargin=1.6em]
+  \item administrator or SYSTEM rights with debug privilege enabled;
+  \item a kernel-mode driver;
+  \item a dump produced by something that already holds those rights.
+\end{itemize}
+
+Cached domain credentials exist so a laptop can log on when the domain controller is unreachable.
+The stored value is the password salted with the account name and iterated many times, which makes
+it slow to crack and impossible to use as a key. It cannot key an NTLM response, and a tool that
+reports cached credentials has found a verifier.
+
+WDigest answered servers that asked for the password rather than a hash, so it kept one. Retention
+is off by default from Windows~8.1 and Server~2012~R2, and one legacy policy value turns it back on
+for every host that applies the policy. Where it is on, you take the password and derive whatever
+else you need.
+
+DPAPI, the Data Protection API, is what applications call instead of writing their own crypto:
+they hand it a secret, and it returns ciphertext bound either to the current user or to the machine.
+A user-scope key is derived from that user's password, so the ciphertext is tied to the account
+rather than to the file it sits in, and LSASS has to unlock the master key at logon before an application
+can read its own secrets back.
+
+Credential Manager keeps its entries as DPAPI blobs, each secret encrypted with that profile's
+master key and readable only by asking DPAPI to decrypt it. That makes the vault reversible by
+design, which is the point: an RDP client has to replay the password, so Windows encrypts it instead
+of hashing it. For the credential types Windows writes itself, the blob is the password, so the
+decrypt returns plaintext. With the user signed in, LSASS holds the master key unlocked and the
+vault opens.
+
+In a default build only the LSASS copy is a key for this attack. WDigest, where a policy has
+restored it, is better than one. The other two are what people mistake for it.
+
+\subsection{From password to key material}
+\unwritten
+% WANT: NT hash = unsalted MD4 over UTF-16LE password, sixteen bytes, no host,
+% account or time component. LM as the older sibling in the same record.
+% ACADEMIA: why an unsalted fast hash is correct for logon and fatal for reuse.
+
+\subsection{The derivation tree}
+\unwritten
+% WANT: one figure. password -> NT hash -> NTLM response; password (+ NT hash)
+% -> RC4 Kerberos key; password -> AES keys via salted PBKDF2, which the hash
+% cannot reach. This asymmetry bounds the whole article.
+% FIGURE: fig-hash-derivation (does not exist yet).
+
+\subsection{NTLM in three messages}
+\unwritten
+% WANT: NEGOTIATE / CHALLENGE / AUTHENTICATE. The server never receives the
+% hash; it verifies a response over a challenge it chose (itself, or via the
+% DC for a domain account). Then NTLMv1 (deterministic DES) vs NTLMv2.
+% FIGURE: fig-ntlm-flow (does not exist yet).
+
+\subsection{Why a captured NTLMv2 is not a hash}
+\unwritten
+% WANT: NetNTLMv2 is the challenge plus the response. It is a cracking
+% candidate, not a key: the response key is bound to user+domain and the proof
+% is bound to that server challenge. Most confusion in this area starts here.
+
+\subsection{AD Kerberos in four messages}
+\unwritten
+% WANT: AS-REQ / AS-REP / TGS-REQ / TGS-REP, the PAC, and pre-auth as an
+% encrypted timestamp. Four legs, four different keys.
+% ACADEMIA: one figure naming which key protects which leg.
+% FIGURE: fig-kerberos-flow (exists).
+
+\subsection{Encryption types: the hinge of everything}
+\unwritten
+% WANT: for RC4-HMAC the long-term key *is* the NT hash; for AES128/256 it is
+% derived from the plaintext. One paragraph, because this single fact decides
+% whether pass-the-key works.
+
+\subsection{Carriers: one auth layer, many transports}
+\unwritten
+% WANT: SMB, MSRPC, WMI/DCOM, WinRM, RDP, LDAP, MSSQL all borrow SSPI/SPNEGO.
+% (Table intent: protocol, default mech, NTLM accepted, can it be restricted.)
+% Blocking a port relocates the path; it does not remove the capability.
+
+\subsection{Logon types: what gets left behind}
+\unwritten
+% WANT: type 2/9/10 make the authenticating host retain material; type 3 does
+% not. This is the difference between a stepping stone and a dead end, and it
+% drives the log story in chapters 7 and 8.

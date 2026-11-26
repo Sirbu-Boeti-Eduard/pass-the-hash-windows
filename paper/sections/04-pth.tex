@@ -1,273 +1,58 @@
 % ======================================================================
-% 4. PASS-THE-HASH IN DEPTH
-% Job of the chapter: the reader can reproduce the response computation on
-% paper, knows why the wire evidence looks innocent, and knows which
-% protocol choice changes the outcome.
+% 4. PASS-THE-HASH
+% Job: the reader can reconstruct the NTLMv2 computation on paper, knows why
+% the wire evidence looks innocent, and knows which protocol choice changes
+% the outcome. This is the core chapter.
 % ======================================================================
-\section{Pass-the-Hash in Depth}
+\section{Pass-the-Hash}
+\unwritten
 \label{sec:pth}
 
-\subsection{What the attacker actually holds}
-
-The material is sixteen bytes: the NT hash of an account, MD4 over the
-UTF-16LE encoding of its password. Nothing accompanies it: no salt, no
-iteration count, no key identifier, nothing naming the account or the machine
-it came from. That absence makes it portable. It survives a paste into a
-command line, a line in a file, or a script variable, and stays valid until the
-password changes.
-
-Three acquisition paths matter. The first is LSASS on a host where the
-account has logged on, which holds the hash for the lifetime of the logon
-session \cite{windows-internals}; reading it needs administrator or
-SYSTEM rights and a logon since the last reboot. The second is offline,
-from SAM and SECURITY hives on a disk, shadow copy, backup,
-or snapshot: local accounts only, the boot key needed to decrypt them, and no
-code execution, only read access to its files \cite{ewaida-2010-pth}. The third is a domain controller, whose database holds
-every domain account's hash, a separate operation with its own privilege bar
-\cite{microsoft-2014-pth}.
-
-What it does not buy matters as much. It does not yield the plaintext, so
-it does not yield the AES128 or AES256 Kerberos keys, which are salted
-derivations of the password (Section~\ref{sec:ptk}). It does not authenticate
-where the password itself is the shared secret, does not satisfy a password
-change, and says nothing about reuse elsewhere. Cracking is a separate step; the
-missing salt makes it cheap, but the hash here is used, not reversed.
-
-The value belongs to an account, not a machine. A local account's hash is
-authoritative only where that SAM is (Section~\ref{sec:framing}); a
-domain account's works wherever the domain is trusted, within the rights it
-carries. Sixteen unmarked bytes also travel into dumps and shared notes, with
-nothing attached to say which account they belong to.
+\subsection{What you actually hold}
+\unwritten
+% WANT: sixteen bytes with nothing attached - no salt, no key id, no account
+% name - which is exactly why it pastes into a shell and stays valid.
+% Three acquisition paths: LSASS (admin/SYSTEM, a fresh logon), offline SAM +
+% SECURITY hives (local accounts, no code execution), DC database (whole domain).
+% DEFEND: no plaintext, therefore no AES keys; cracking is optional and separate.
 
 \subsection{Computing a valid response without the password}
-\subsubsection{The derivation, step by step}
+\unwritten
+% WANT: the five NTLMv2 values in construction order (response key, temp block,
+% proof, response, session base key), and the point each one carries:
+% response key binds the hash to user+domain; the temp block is client-chosen;
+% the proof is per-attempt.
+% TABLE: five values / built from / supplied by. Archive: _draft-v1/04-pth.tex.
 
-Five values make up an NTLMv2 exchange, and only one of them needs anything secret.
-Table~\ref{tab:ntlmv2} names them in the order they are built.
+\subsection{Why this is not replay}
+\unwritten
+% WANT: replaying a captured Type 3 fails because the proof is bound to a
+% challenge and a timestamp window. A hash holder computes a *fresh* proof.
+% Nonce and timestamp defences aim at the wrong attacker entirely.
 
-\begin{table}[H]
-\centering
-\small
-\renewcommand{\arraystretch}{1.28}
-\caption{The five values of an NTLMv2 exchange, in construction order.}
-\label{tab:ntlmv2}
-\begin{tabularx}{\textwidth}{@{}L{2.6cm}L{8.6cm}Y@{}}
-\toprule
-Value & Built from & Supplied by \\
-\midrule
-Response key &
-HMAC-MD5 of the NT hash, over the uppercased account name followed by the domain, both
-UTF-16LE, no separator &
-derived once; fixed for the account \\
-Temp block &
-two version bytes (\texttt{0x01} \texttt{0x01}), six zero bytes, an 8-byte timestamp, the
-client challenge, four zero bytes, the server's target information, four zero bytes &
-the client, except the target information, which is echoed \\
-Proof (\texttt{NTProofStr}) &
-HMAC-MD5 of the response key, over the server challenge followed by the temp block &
-computed at run time, per attempt \\
-Response &
-the proof followed by the temp block & what crosses the wire \\
-Session base key &
-HMAC-MD5 of the response key, over the proof alone & roots every key that protects the
-connection \\
-\bottomrule
-\end{tabularx}
-\end{table}
+\subsection{Two ways to pass it}
+\unwritten
+% WANT: (a) speak NTLM from your host - inbound type 3 on the target, nothing
+% stored, hash carried to every hop; (b) inject into LSASS - needs execution
+% first, creates a local type 9 session (runas /netonly shape), makes the pivot
+% host a new extraction site. Same access, different prerequisites and logs.
 
-Two details in that table carry the argument that follows. The response key is not the hash
-used directly: the hash is the HMAC key and the message is the account name followed by the
-domain, which binds the result to one domain, and the uppercasing is part of the definition
-rather than a convention. The temp block, by contrast, belongs almost entirely to the client:
-the version bytes, the timestamp, the challenge, the zero padding. Only the target information
-comes from the server, and it is copied rather than chosen.
+\subsection{Signing and sealing: what they do and do not stop}
+\unwritten
+% WANT: the session key descends from the hash, so a hash holder can sign.
+% Signing kills relay (attacker has no key), not pass-the-hash. Encryption does
+% not help either: the attacker is an endpoint, not an observer.
 
-The proof is therefore different on every attempt and tied to that server's challenge. The last
-row of the table is what Section~\ref{sec:signing} needs: the session base key is the value
-every key protecting the connection descends from. Verification runs the same arithmetic from the
-other side, and the server reaches the same conclusion the client started from. It looks up the
-account's hash, rebuilds the response key, rebuilds the block, recomputes the proof and compares.
-Verifier and client hold one secret and perform one computation, which is the design of the
-protocol: NTLM establishes that both parties can compute with a shared key, and nothing else.
+\subsection{Carriers, one line each}
+\unwritten
+% WANT (subsections or a table): SMB via IPC$/ADMIN$ + service or scheduled
+% task; WinRM on 5985/5986 with no share; WMI/DCOM over 135 + dynamic range;
+% RDP Restricted Admin (hash stays client-side, target logs type 3);
+% MSSQL xp_cmdshell, LDAP bind, HTTP Negotiate.
+% Takeaway: NTLM is consumed through SSPI, so any Windows-auth service is a carrier.
 
-\subsubsection{Why this is not replay}
-
-Take a complete Type~3 message from a capture and try to reuse it. Against
-another host it fails because the new server issues its own challenge and the proof
-was computed over the old one, so the first thing the HMAC covers is already different. Against the same host it fails identically: each
-Type~2 carries a fresh challenge, and the timestamp is checked against a
-clock-skew window.
-
-What the server learns is one thing: the sender could compute
-the proof under the response key. It cannot learn whether that party
-typed the password a minute ago or read the hash last week, because both run the
-identical computation. The logon that results is not a protocol anomaly, and
-inspection will not make it one. Implementations differ in incidentals such as
-the workstation name and negotiate flags, and those are what a defender has left
-(Section~\ref{sec:detection}).
-
-The usual replay defences are not merely insufficient; they aim elsewhere. A
-nonce and a timestamp stop an attacker who records and resends, and do nothing
-against one who holds the key and computes a fresh response for the current
-nonce. Pass-the-hash is not a replay attack in the sense the term usually
-carries. The evidence lies in how the bytes were produced: which host, which
-process, which session, never the bytes.
-
-\subsubsection{Two ways to pass it}
-
-The first way is for the attacker's host to speak NTLM. A client
-library builds the Type~1 message, receives Type~2, computes the response for
-that challenge, and sends Type~3 in whatever carrier is in use. Authentication
-happens on the attacker's side of the wire; the target sees a network logon,
-records type~3, and builds a token scoped to the connection. A type~3 logon
-leaves no reusable credential behind, so the attacker must carry the hash to
-every hop \cite{mitre-t1550-002}.
-
-The second way writes the hash into LSASS on a host the attacker
-already controls, after which Windows performs the logon. It needs code
-execution at administrator or SYSTEM level before authentication, and
-that ordering is the substance of the difference. The session
-created there is local and, in the usual construction, type~9, the same shape as
-\texttt{runas /netonly}; only later connections produce type~3 events elsewhere.
-
-The two leave different footprints. The first way leaves an inbound type~3 logon on the
-target, paired with a credential validation on the domain controller; the second
-leaves no inbound authentication on the machine holding the material, which
-becomes a second credential store, so the pivot is also a new extraction site.
-The access is identical; the prerequisites and the visibility are not.
-Section~\ref{sec:results} exercises the two separately, and
-Figure~\ref{fig:locality} marks what crosses the wire.
-
-\subsection{Consequences for signing and sealing}
-\label{sec:signing}
-
-SMB signing covers each message with a key derived from the session key, so the question is
-whether a hash holder can reach that key \cite{ms-smb2}. The chain is short: the session base
-key is an HMAC over the proof, keyed with the response key; the exported session key is either
-that value or, with key exchange, its RC4 decryption of
-\texttt{EncryptedRandomSessionKey}; and the response key is an HMAC keyed with the NT hash. An
-attacker holding the hash recomputes every link, starting from the proof.
-
-No step asks for the password. Signing guarantees a message came
-from a party that completed the authentication and was not altered in transit.
-It does not guarantee that the party knew the password; the protocol tests for
-the key.
-
-Relay is where the distinction bites. There the attacker does not hold the key:
-it forwards a client's authentication to a different server and hopes to inherit
-the session. When the target requires signing, the attacker must produce
-per-message signatures under a session key it cannot derive, and the relay fails
-at the first signed request. Requiring SMB signing is therefore a sound
-control against relay and NTLM reflection, and changes nothing against
-a hash holder, who derives the key from the material the client used. Encryption
-fares no better: the attacker is an endpoint of the session, not an observer.
-
-\subsection{Protocol coverage}
-\subsubsection{SMB}
-
-SMB carries NTLM in session setup on TCP 445
-\cite{ms-ntlm-overview}. Two shares do the work: \texttt{IPC\$} exposes the
-service control and task scheduler named pipes, and \texttt{ADMIN\$} maps the
-system directory for file placement; execution is then a service pointing at the
-uploaded binary, or a scheduled task. Preconditions are checked in order: local
-administrator rights, a share permission allowing the write, a reachable service
-control manager, an open port. For local accounts
-the UAC remote restriction strips the administrative token from a network logon
-unless \texttt{LocalAccountTokenFilterPolicy} is set, the most common reason a
-valid hash ends in access denied.
-
-\subsubsection{WinRM}
-
-WinRM runs over HTTP or HTTPS with a Negotiate token in the
-\texttt{Authorization} header, on 5985 and 5986. It needs no share and no service
-creation; the account must belong to Remote Management Users or local
-administrators. Where 445 is filtered between segments while 5985 stays open, it
-is often the only path, and the more reliable one against a host hardened for
-SMB. It does not delegate: without
-CredSSP or Kerberos delegation the session cannot reach a second remote
-resource, so it gives one hop.
-
-\subsubsection{WMI and DCOM}
-
-WMI and DCOM reach the target over RPC, through the endpoint
-mapper on 135 and then a dynamic range negotiated for the interface. A process
-created through \texttt{Win32\_Process} gives execution without a share or the
-service control manager. The account needs administrator rights and
-remote activation permission, and the practical obstacle is the dynamic range,
-which egress filtering often blocks even where 135 is reachable.
-
-\subsubsection{RDP with Restricted Admin}
-
-RDP in Restricted Admin mode is the special case. The client
-authenticates to the target with NTLM, consuming the hash locally to
-compute the response, and the session is recorded on the target as a network
-logon, type~3, even though a desktop appears: the mode exists precisely so that
-no credential is delivered to the host being administered
-\cite{ms-advisory-2871997}. The hash never reaches the target, and nothing
-reusable is cached there, so the desktop cannot reach a further host with that
-identity \cite{mitre-t1550}. It requires the policy setting on the target and the
-ordinary logon right. Here the hash stays on the attacker's machine.
-
-\subsubsection{Secondary carriers}
-
-MSSQL accepts NTLM inside the TDS login, and a sysadmin login
-can run \texttt{xp\_cmdshell}. LDAP accepts it as a SASL bind, giving
-directory reads and whatever writes the account's entries allow, with no
-execution on its own. HTTP carries it through Negotiate in IIS, Exchange, WSUS,
-and any application built on SSPI. The list extends, and that is the
-argument: NTLM is consumed through SSPI, not through
-SMB, so every service accepting Windows authentication is a carrier.
-Blocking one protocol relocates the path; only the material, or the acceptance
-of NTLM as a mechanism, is a common control point
-(Section~\ref{sec:mitigation}).
-
-\subsection{Tooling and Capabilities}
-
-Table~\ref{tab:tooling} maps capability to implementation rather than ranking
-tools. The last column records what each supplies that the others cannot, since
-an engagement needs most of them in sequence, and the rows follow the order an
-operation uses them rather than any ranking.
-
-\begin{table}[htbp]
-\centering
-\small
-\caption{Capabilities for carrying a hash to a session, and what each adds.}
-\label{tab:tooling}
-\begin{tabularx}{\textwidth}{@{}L{4.3cm}L{6.4cm}Y@{}}
-\toprule
-Capability & Implementation & What it adds \\
-\midrule
-Read hashes from live memory &
-\texttt{mimikatz} \texttt{sekurlsa::msv} \cite{deply-mimikatz} &
-No reboot; needs administrator or SYSTEM \\
-Read hashes from a disk image &
-\texttt{mimikatz} \texttt{lsadump::sam}, or \texttt{impacket}
-\texttt{secretsdump} against the files \cite{fortra-impacket} &
-Local accounts only; no code execution on the host \\
-NTLM client, SMB &
-\texttt{impacket} \texttt{smbclient}, \texttt{smbexec}, \texttt{atexec} \cite{fortra-impacket} &
-Type~3 logon with field control; runs on any Python host \\
-NTLM client, WinRM &
-\texttt{netexec} \texttt{winrm} \cite{netexec} &
-Execution on 5985, with no share required \\
-NTLM client, RPC &
-\texttt{impacket} \texttt{wmiexec}, \texttt{dcomexec}; \texttt{netexec} \texttt{wmi} &
-Process creation with no share, service or file \\
-RDP, restricted admin &
-\texttt{mstsc /restrictedAdmin}, launched from a session seeded by
-\texttt{mimikatz} \texttt{sekurlsa::pth} &
-The only carrier that keeps the hash client-side \\
-Orchestration &
-\texttt{netexec} \cite{netexec} &
-One coverage map across all carriers \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-The accompanying repository sits in the last row and nowhere else: it
-drives maintained implementations of NTLM and of each carrier rather
-than reimplementing HMAC-MD5 and the message encodings, so a defect in the
-cryptographic core is a defect in a reviewed library. What it owns is the
-environment and the evidence pipeline, host build, snapshot discipline, and the
-extraction of events that Section~\ref{sec:results} tabulates, which makes its
-contribution reproducibility rather than cryptography.
+\subsection{Tooling, by capability}
+\unwritten
+% WANT: capability -> maintained tool, no ranking, ordered as an op uses them.
+% Memory dump, offline hive parse, SMB, WinRM, WMI, RDP restricted, orchestration.
+% Note: our PoC wraps these; it does not reimplement HMAC-MD5.

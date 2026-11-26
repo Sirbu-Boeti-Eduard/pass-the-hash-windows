@@ -46,12 +46,13 @@
 \graphicspath{{figures/}}
 
 % ---------- colour, diagrams ----------
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
 \definecolor{inkgrey}{RGB}{60,60,60}
 \definecolor{termbg}{RGB}{250,250,250}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc}
-% \usepackage{pgfplots}   % enable only if a chart (not a diagram) is needed
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 
 % ---------- terminal / command output ----------
 % Used instead of minted to keep the build free of -shell-escape.
@@ -87,6 +88,11 @@
 \author{Author One \and Author Two\\[0.4em]
         \small Security Protocols --- MSc}
 \date{\today}
+
+% Headings whose body is not written yet give the page builder no legal break,
+% which produces stray blank pages while drafting. This opens an empty
+% paragraph so a break exists. Delete it together with the placeholders.
+\newcommand{\unwritten}{\leavevmode\par}
 
 \begin{document}
 \maketitle

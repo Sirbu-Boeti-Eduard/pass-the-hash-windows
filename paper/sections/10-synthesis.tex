@@ -1,27 +1,26 @@
 % ======================================================================
-% 10. SYNTHESIS  (budget: 1.0 page)
-% Job of the chapter: answer the question the title implies -- so when does
-% this still work? A decision chain, not a summary of the paper.
+% 10. SYNTHESIS
+% Job: answer the question the title implies - so when does this still work?
+% A decision chain, not a summary.
 % ======================================================================
-\section{When These Attacks Actually Work}
+\section{Decision Tree: Does It Work Here?}
+\unwritten
 \label{sec:synthesis}
 
-\subsection{The precondition chain as a decision procedure}
-% CLAIM (0.4): five questions in order, each one able to end the attack:
-%   1. Is NTLM accepted anywhere on the path?        -> PtH viable
-%   2. Is RC4 enabled for the account?               -> PtK viable
-%   3. Is the hash reachable on a host we already own? -> both viable
-%   4. Is extraction blocked (Credential Guard/PPL)? -> extraction dead, live
-%                                                       session reuse is not
-%   5. Is the account authorised on the target?      -> the real bottleneck
-% Most real intrusions die at 5, and almost nobody writes that down.
+\subsection{Five questions, in order}
+\unwritten
+% WANT: 1. Is NTLM accepted anywhere on the path? 2. Is RC4 enabled for the
+% account? 3. Is the hash reachable on a host we already own? 4. Is extraction
+% blocked (CG/PPL) - and does a live session still work? 5. Is the account
+% authorised on the target? Most real intrusions die at 5.
 
 \subsection{Where it fails in a modern estate}
-% CLAIM (0.3): concrete failure modes we observed plus the ones we can argue
-% from the protocol: token filtering, NTLM disabled per service, AES-only,
-% Protected Users, tiered admin with no overlapping local admins.
+\unwritten
+% WANT: observed failures plus the ones argued from the protocol: token
+% filtering, NTLM off per service, AES-only, Protected Users, tiered admin with
+% no overlapping local admins.
 
-\subsection{What survives the deprecation}
-% CLAIM (0.3): NTLM deprecation and RC4 removal shrink this space over the
-% next few years, but the class of attack survives as long as any protocol
-% authenticates on derived key material.
+\subsection{What survives deprecation}
+\unwritten
+% WANT: NTLM deprecation and RC4 removal shrink the space, but the class
+% survives as long as any protocol authenticates on derived key material.

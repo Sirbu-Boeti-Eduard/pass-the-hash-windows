@@ -1,46 +1,61 @@
 % ======================================================================
-% 6. PROOF OF CONCEPT  (budget: 3.0 pages)
-% Job of the chapter: justify design decisions and point at the repository
-% for mechanics. Declarative how-to lives in poc/README.md; do not duplicate.
-% Reader should be able to rebuild the lab from the repo alone.
+% 6. THE LAB AND THE POC
+% Job: enough for someone with three VMs to rebuild it, and an argument for
+% why the deliverable is a set of skills rather than a set of scripts.
+% Mechanics live in poc/README.md; do not duplicate them here.
 % ======================================================================
-\section{Proof-of-Concept: Environment and Implementation}
+\section{The Lab and the PoC}
+\unwritten
 \label{sec:poc}
 
-\subsection{Lab topology and isolation}
-% CLAIM (0.4): three hosts on a host-only network, no bridged adapter, no
-% NAT during execution; snapshot policy yields reproducibility.
-% Figure: fig-lab-topology.
+\subsection{Topology and isolation}
+\unwritten
+% WANT: DC + client + attacker on a host-only network, no bridged adapter, no
+% outbound during execution, snapshot before every scenario. Reproducibility
+% is the claim; the topology is the evidence for it.
 
-\subsection{Identity and permission design}
-% CLAIM (0.3): two accounts -- an unprivileged user to prove the limits, and
-% a "helpdesk admin" whose rights exist on the client and nowhere else. The
-% deliberate misconfiguration under test is stated as such, not hidden.
+\subsection{Identities and the deliberate misconfiguration}
+\unwritten
+% WANT: one unprivileged user to show the limits, one helpdesk-style admin whose
+% rights exist on the client and nowhere else. State the misconfiguration we
+% are testing as a misconfiguration - do not smuggle it in.
 
 \subsection{Acquiring the material}
-% CLAIM (0.4): local admin on the client reads the credential store; we show
-% the hash and never the password, and the account's password is used
-% nowhere in the attack. Say plainly that obtaining local admin is the
-% expensive part of a real intrusion -- this is the honesty the chapter needs.
+\unwritten
+% WANT: local admin on the client reads the store; we show the hash and never
+% the password, and the password is used nowhere afterwards. Say plainly that
+% getting local admin is the expensive part of a real engagement.
 
-\subsection{Scenario A --- PtH over SMB}
-% CLAIM (0.5): full sequence, expected artefacts on client and DC, and the
-% three ways it can fail (share permissions, token filtering, signing policy).
+\subsection{Scenario A - PtH over SMB}
+\unwritten
+% WANT: full sequence, expected artefacts on client and DC, and the three ways
+% it fails: share permission, token filtering, signing policy.
 
-\subsection{Scenario B --- PtH over WinRM}
-% CLAIM (0.3): why it succeeds where SMB is hardened, and what the logs show.
+\subsection{Scenario B - PtH over WinRM}
+\unwritten
+% WANT: why it works where SMB is hardened, and what the two ends log.
 
-\subsection{Scenario C --- PtK to a TGT}
-% CLAIM (0.4): same sixteen bytes, Kerberos client, TGT obtained, service
-% ticket used. Delete this subsection entirely if the gate closes.
+\subsection{Scenario C - PtK to a TGT}
+\unwritten
+% WANT: same sixteen bytes, Kerberos client, TGT obtained, service ticket used,
+% then the negative run on an AES-only account.
+
+\subsection{Why skills, not scripts}
+\unwritten
+% WANT: a script automates one fixed path; a skill states the precondition, the
+% decision point, the exact action and the expected evidence, so it can be
+% driven against a different estate and still fail honestly. Include the skill
+% anatomy (trigger, preconditions, steps, verification, log expectations) and
+% how we validate a skill before trusting it.
 
 \subsection{Evidence collection}
-% CLAIM (0.4): what we captured and why -- DC and client Security logs, NTLM
-% auditing, capture at the client NIC, terminal transcripts; single NTP
-% source so events interleave; naming convention the Results chapter cites.
+\unwritten
+% WANT: what we captured and why - Security logs on DC and client, NTLM
+% auditing, capture at the client NIC, terminal transcripts, one NTP source so
+% events interleave. Naming convention the results chapter cites.
 
 \subsection{Implementation and tooling}
-% CLAIM (0.3): we do not reimplement NTLM or Kerberos. Original code is glue:
-% environment bootstrap, scenario driver, .evtx extraction that renders the
-% chapter 7 tables. Two sentences of justification, then point to the repo.
-% No shell listings in the PDF except where the output is the evidence.
+\unwritten
+% WANT: we do not reimplement NTLM or Kerberos; original code is glue plus the
+% skills. Two sentences, then point at the repo. No shell listings in the PDF
+% except where the output is the evidence.

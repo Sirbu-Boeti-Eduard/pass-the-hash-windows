@@ -1,0 +1,20 @@
+% Figure: NTLM share of observed internal authentication. Used in section 1.1.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\scriptsize]
+\fill[black!70] (0,0) rectangle (4.32,1.0);
+\fill[black!18] (4.32,0) rectangle (10,1.0);
+\draw[black!45] (0,0) rectangle (10,1.0);
+\node[white, font=\footnotesize\bfseries] at (2.16,0.5) {NTLM 43.2\%};
+\node[black!75, font=\footnotesize] at (7.16,0.5) {other 56.8\%};
+% scale, below the bar
+\draw[black!45] (0,0) -- (0,-0.14);
+\draw[black!45] (5,0) -- (5,-0.14);
+\draw[black!45] (10,0) -- (10,-0.14);
+\node[below=2pt] at (0,-0.14) {0};
+\node[below=2pt] at (5,-0.14) {50};
+\node[below=2pt] at (10,-0.14) {100\%};
+\end{tikzpicture}
+\caption{\small Share of observed internal authentication that used NTLM, 2026.}
+\label{fig:auth-mix}
+\end{figure}

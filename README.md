@@ -2,53 +2,67 @@
 
 **Pass-the-Hash and Pass-the-Key against NTLM and Kerberos**
 
-An essay and a reproducible proof of concept on how Windows authenticates with derived key
-material rather than with passwords, and what follows from that design choice.
-
----
+An article for practitioners, and a reproducible lab: how Windows authenticates on derived key
+material rather than on passwords, and what follows from that.
 
 ## What this is
 
-Both NTLM and Kerberos allow a client to complete authentication locally, from a secret that never
-travels over the network. That is a deliberate design property, not a bug, and it is the reason no
-cryptographic break is needed to defeat either protocol. An NT hash is not a stolen password
-waiting to be cracked; it is a key, and possession of it is possession of the account.
+NTLM and Kerberos both let a client finish authentication locally, from a secret that never crosses
+the wire. An NT hash is not a stolen password waiting to be cracked; it is the key those protocols
+compute with, and holding it is holding the account. No cipher is broken anywhere in this work.
 
-The work covers Pass-the-Hash as the core case and Pass-the-Key as its Kerberos counterpart, since
-both consume the same sixteen bytes.
+The article covers pass-the-hash as the core case and pass-the-key as its Kerberos counterpart,
+since both consume the same sixteen bytes. It is written for people who run the tools: the
+mechanism, the preconditions, the logs each step leaves, and the controls that actually stop it.
+The academic requirement is covered in passing rather than used as the frame.
 
-The essay develops the subject from first principles — accounts and tokens, where Windows stores
-secrets, how a password becomes a key, how NTLM proves possession of that key over the wire, how
-Active Directory Kerberos does the same — before treating the attacks, the proof of concept, and
-the controls that actually break the chain.
+## The proof of concept
 
-## Repository contents
+The lab exists so the techniques can be run and observed. It is a playground, not a hardened
+build: three hosts on an isolated network, snapshots before every scenario, no bridged adapter and
+no outbound connectivity while a scenario runs.
+
+The PoC ships as **agent skills**, not scripts. The maintained tools do the work; the skills hold
+the judgement — which tool, against which precondition, and what the result means — with a human
+reviewing each step. Scripts were considered and rejected: writing one is cheap, maintaining it is
+not, and the community tools are already better than anything written for this repository.
+
+Evidence is the point of the exercise. Security logs from both ends of every connection, NTLM
+auditing, and packet captures, so each claim in the results chapter traces to a file.
+
+## Repository layout
 
 | Path | Contents |
 |---|---|
-| `paper/` | The essay in LaTeX: `main.tex`, one file per section under `sections/`, bibliography in `refs.bib`, diagrams in `figures/` |
-| `poc/lab/` | Virtual lab definition: host specifications, network configuration, snapshot policy |
-| `poc/scripts/` | Environment bootstrap, scenario driver, evidence extraction |
-| `poc/evidence/` | Curated log excerpts and command output behind every result |
+| `paper/` | the article in LaTeX: `main.tex`, one file per section in `sections/`, bibliography in `refs.bib`, diagrams in `figures/` |
+| `poc/` | lab definition, the agent skills that drive each scenario, and the curated evidence |
+| `prompts/` | working notes for whoever continues the draft: house style, de-slopping, handoff brief |
+| `docs/` | scratch notes, not part of the PDF |
 
-## Structure of the essay
+## Structure
 
 | | Chapter |
 |---|---|
 | 1 | Introduction |
-| 2 | Background: Windows Authentication from Zero |
-| 3 | Credential Material as a Bearer Capability |
-| 4 | Pass-the-Hash in Depth |
+| 2 | Background: How Windows Authenticates |
+| 3 | The Primitive: Credential Material as a Bearer Token |
+| 4 | Pass-the-Hash |
 | 5 | Pass-the-Key: the Kerberos Face of the Same Primitive |
-| 6 | Proof-of-Concept: Environment and Implementation |
+| 6 | The Lab and the PoC |
 | 7 | Results |
-| 8 | Detection |
-| 9 | Effects and Mitigation |
-| 10 | When These Attacks Actually Work |
+| 8 | Reading the Logs |
+| 9 | Mitigations That Actually Break It |
+| 10 | Decision Tree: Does It Work Here? |
 | 11 | Conclusion |
 
-Chapter 2 carries the vocabulary the rest of the paper relies on; later chapters assume it and
-introduce no competing definitions.
+Chapter 2 opens with an unnumbered primer and then builds the mechanisms in order; later chapters
+assume its vocabulary and introduce no competing definitions.
+
+## Status
+
+Drafting. Chapter 1 and the opening of chapter 2 — the primer, 2.1 accounts and tokens, 2.2 where
+the hash lives — are written. The rest of chapter 2 and chapters 3 to 12 carry headings and intent
+notes only. The lab has not been built yet.
 
 ## Building the paper
 
@@ -66,19 +80,12 @@ every run, and the document date is pinned to the last commit that touched `pape
 commit always yields the same PDF. The script fails on unresolved references, undefined citations
 and citation keys absent from `refs.bib`, and reports any `[[CITE: …]]` markers left in the text.
 
-`paper/` is never modified by a build. Diagrams are authored by the team as TikZ, or as draw.io
-sources exported to PDF, both committed alongside the figure they produce.
-
-## Reproducing the lab
-
-Three hosts on an isolated host-only network: a domain controller, a Windows client, and an
-attacker host. No bridged adapter and no outbound connectivity during execution. Snapshots are
-taken before every scenario, and `poc/README.md` documents the build order, the identity design,
-and the evidence each scenario is expected to produce.
-
-No public, university, or third-party system was involved at any point.
+`paper/` is never modified by a build. Diagrams are authored as TikZ and committed alongside the
+section that includes them.
 
 ## Licensing
 
-Prose is released under CC BY 4.0; scripts under MIT. Third-party tools and documentation are
-cited, not redistributed.
+Prose is released under CC BY 4.0; skills and scripts under MIT. Third-party tools and
+documentation are cited, not redistributed.
+
+No public, university, or third-party system was involved at any point.

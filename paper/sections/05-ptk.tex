@@ -1,120 +1,42 @@
 % ======================================================================
-% 5. PASS-THE-KEY  (budget: 2.0 pages)
-% Job of the chapter: show this is not a second attack but the same attack
-% in a different protocol family, and locate exactly where it stops.
-% Gate: expand past skeleton only if the 20 Dec decision is "in".
+% 5. PASS-THE-KEY
+% Job: not a second attack - the same attack in another protocol family, with
+% a hard boundary at one encryption type.
 % ======================================================================
 \section{Pass-the-Key: the Kerberos Face of the Same Primitive}
+\unwritten
 \label{sec:ptk}
 
 \subsection{Why the NT hash is also a Kerberos key}
-
-Chapter~\ref{sec:pth} computed an NTLMv2 proof from sixteen bytes. This chapter asks a
-KDC to issue a ticket from the same sixteen bytes, and it can because of one encryption
-type rather than anything in Kerberos as a whole. For RC4-HMAC, etype \texttt{0x17}, the
-client's long-term key is the NT hash itself. No derivation step separates the value read
-out of LSASS from the value the KDC holds for the account. The hash is the key on both
-sides, which makes the Kerberos variant a change of protocol rather than a change of
-capability \cite{ms-kile}.
-
-Every other etype in a domain breaks the identity. For AES128 and AES256, etype
-\texttt{0x11} and \texttt{0x12}, the long-term key comes from the plaintext password
-through a salted string-to-key function, built on PBKDF2-HMAC-SHA1 with a salt drawn from
-the realm and the username \cite{rfc3962,ms-kile}. A hash cannot produce such a key. The salt is
-public, the input is the password, and the sixteen bytes are not it. An NT hash is
-therefore a Kerberos key for exactly one etype and inert for the other two.
-
-That asymmetry governs the chapter. Pass-the-key works only while an RC4 path exists for
-the account \cite{microsoft-2014-pth}. Where the path is absent the technique does not
-become harder; it becomes impossible, and the alternatives are password recovery or a
-different class of material. The same sentence explains why RC4 has outlived its
-cryptographic reputation: it is the only etype whose key an attacker can hold without
-learning the password. The literature carries the technique under two names, pass-the-key
-after the material it consumes and overpass-the-hash after the operation it performs; they
-describe the same exchange.
+\unwritten
+% WANT: for RC4-HMAC (0x17) the long-term key is the NT hash itself; for AES
+% (0x11/0x12) the key is salted PBKDF2 over the plaintext. So a hash is a
+% Kerberos key for exactly one etype and inert for the other two.
+% ACADEMIA: why RC4 outlives its reputation - it is the only etype keyed by a
+% value you can steal without the password.
 
 \subsection{Building an AS-REQ from a key}
-\subsubsection{Pre-authentication with a key instead of a password}
+\unwritten
+% WANT: the only substitution is pre-authentication: encrypt the timestamp
+% under the hash instead of the password-derived key. Everything else is a
+% normal AS exchange; the TGT carries the real PAC, so rights are real.
+% After the AS-REP the hash stops mattering - the TGT is portable material.
 
-An AS request built from a key is the ordinary AS request with one substitution.
-Pre-authentication in Active Directory is PA-ENC-TIMESTAMP: a timestamp encrypted under
-the client's long-term key and carried in the AS-REQ. The KDC decrypts it with the key it
-holds for the account, checks the timestamp against the allowable skew, and reads a
-successful decryption as proof of possession. When the long-term key is the NT hash, the
-attacker computes the ciphertext the legitimate client computes, because that client also
-keys the timestamp from a secret the KDC shares. Nothing separates the two at this step
-\cite{ms-kile}.
-
-Everything around the timestamp is untouched. The AS-REQ carries the same fields, the KDC
-applies the same policy, and the AS-REP returns a TGT encrypted under the krbtgt key with
-a session key wrapped under the client's long-term key. The TGT carries the user's PAC, so
-authorization downstream reads the account's real group membership
-\cite{ms-kerberos-overview}. No password appears in the exchange, and none is derived.
-
-After the AS-REP the hash stops mattering. TGS requests are authenticated with the TGT
-session key, service tickets are issued against the PAC, and every later step uses
-material the KDC minted. The original secret is consumed once per ticket lifetime rather
-than once per service, and the attacker's operating system ceases to be a constraint: a
-TGT is a portable structure defined by RFC~4120, and any Kerberos implementation that
-reads a keytab or credential cache can use it. Implementations that build such requests
-from a key exist in both tool families this paper relies on
-\cite{deply-mimikatz,fortra-impacket}.
-
-\subsubsection{Encryption-type negotiation and the downgrade incentive}
-
-Encryption types are negotiated, not imposed. The client lists the etypes it will accept
-in the AS-REQ, the KDC selects one from the intersection of that list with what the
-account permits, and the AS-REP reports the choice \cite{rfc4120,ms-kile}. A request
-offering only \texttt{0x17} is honoured whenever the account still permits RC4 and refused
-when it does not.
-
-The interest in RC4 is consequently a policy question, not a cryptographic one. Downgrade
-here is attractive rather than necessary: no stronger etype is being defeated, since an
-AES exchange cannot be attempted from a hash at all. Offering \texttt{0x17} alone is the
-only request that can be built, and whether the KDC accepts it depends on the account's
-supported encryption types and the domain policy inherited by accounts that set none.
+\subsection{Encryption-type negotiation and the RC4 incentive}
+\unwritten
+% WANT: etypes are negotiated; offering only 0x17 is honoured if the account
+% still permits RC4. This is policy, not a downgrade of a stronger cipher:
+% an AES exchange cannot be attempted from a hash at all.
 
 \subsection{What PtK buys over PtH}
-
-Three gains follow that Chapter~\ref{sec:pth} does not offer. The first is reach into
-estates that have removed NTLM and consider the problem closed. Restricting NTLM addresses
-the protocol that carries the hash in a Type~3 message; it does nothing to a KDC that
-still accepts RC4 pre-authentication for the same account. A domain with NTLM disabled and
-RC4 untouched is not hardened against this technique, because the two settings
-are decided separately and neither one implies the other.
-
-The second is access to services that refuse NTLM. A service ticket satisfies any service
-that accepts Kerberos and rejects NTLM, which includes hardened configurations and
-services whose default posture is Kerberos only \cite{ms-kerberos-overview}. An NTLM
-response computed from the hash has no route into such a service.
-
-The third is independence from the attacker's platform and from the target's credential
-store. The NTLM technique speaks the protocol from the attacking host or writes the hash
-into LSASS; both keep the attacker inside the Windows authentication stack. A TGT
-obtained once is a file, and the rest of the intrusion can be driven from any host with a
-Kerberos client \cite{fortra-impacket}.
+\unwritten
+% WANT: reach into estates that disabled NTLM and called it done; access to
+% Kerberos-only services; platform independence - a TGT is a file, the rest
+% of the intrusion can run from any host with a Kerberos client.
 
 \subsection{Where PtK stops}
-
-The technique stops where RC4 stops. If an account is restricted to \texttt{0x11} and
-\texttt{0x12}, the AS-REQ cannot be built: the keys the KDC accepts are derived from the
-plaintext, and the hash yields none of them. Removing RC4 from the domain's supported
-encryption types, or from a trust along a referral path, does the same for every account
-it covers. This is the negative result the proof of concept is designed to produce: the
-same credential and the same request, failing at the KDC because the etype is gone rather
-than because the implementation is wrong.
-
-FAST and armouring are often listed as controls against this technique and do not belong in that
-list. Armouring wraps the pre-authentication exchange in a key derived from an armour ticket,
-which stops an attacker from capturing the encrypted timestamp and guessing passwords against it
-offline \cite{ms-kile}. It does not stop an attacker who already holds the key: nothing is being
-guessed, and the armour ticket itself is obtained in an initial AS exchange. FAST protects the
-secrecy of the pre-authentication blob, not the possession of the long-term key, so the removal
-still has to come from the etype. Protected Users is the exception that does both for the
-accounts placed in it, whose members cannot authenticate with NTLM, cannot use RC4 or DES for
-pre-authentication, and have no cached interactive logon \cite{ms-protected-users}.
-
-Each carries an operational cost, and Chapter~\ref{sec:mitigation} treats them as protocol
-hardening and measures what they break. Their role here is to mark the boundary.
-Pass-the-key is pass-the-hash applied to a second protocol family, and it ends where the
-key in hand stops being a key the protocol will accept.
+\unwritten
+% WANT: where RC4 stops. AES-only account or domain -> the AS-REQ cannot be
+% built. FAST does not help (it protects the pre-auth blob from offline
+% guessing, not possession); Protected Users does, because it removes NTLM and
+% RC4 and cached logons for its members.

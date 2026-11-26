@@ -1,0 +1,75 @@
+% Figure: who authenticates, and who authorises. Used in section 2.1.
+% Colour carries meaning: blue = process, teal = LSA subsystem, orange =
+% authentication package, grey = kernel component. Keep it that way.
+\begin{figure}[htbp]
+\centering
+\small
+\begin{tikzpicture}[
+  proc/.style={draw=black!45, fill=blue!8, rounded corners=2pt, align=center,
+               font=\scriptsize, minimum height=0.72cm},
+  api/.style={draw=black!45, fill=white, dashed, align=center, font=\scriptsize,
+              minimum height=0.6cm},
+  sub/.style={draw=black!45, fill=teal!10, align=center, font=\scriptsize,
+              minimum height=0.62cm},
+  pkg/.style={draw=black!60, fill=orange!22, align=center, font=\scriptsize,
+              minimum height=0.62cm},
+  kern/.style={draw=black!45, fill=black!12, align=center, font=\scriptsize,
+               minimum height=0.8cm},
+  arr/.style={-{Stealth[length=1.8mm]}, draw=black!55, thick}
+]
+
+% callers -----------------------------------------------------------
+\node[proc, text width=2.6cm] (w) at (1.5,0) {\texttt{winlogon.exe}};
+\node[proc, text width=2.2cm] (s) at (4.2,0) {\texttt{services.exe}};
+\node[proc, text width=2.4cm] (a) at (6.9,0) {applications};
+
+% the interface every caller uses -----------------------------------
+\node[api, text width=6.6cm] (sspi) at (4.2,-1.15) {SSPI \textperiodcentered{} Negotiate};
+
+\draw[arr] (1.5,-0.4) -- (1.9,-0.8);
+\draw[arr] (4.2,-0.4) -- (4.2,-0.8);
+\draw[arr] (6.9,-0.4) -- (6.5,-0.8);
+
+% lsass --------------------------------------------------------------
+\draw[draw=black!45, fill=blue!4, rounded corners=3pt] (0.2,-1.72) rectangle (8.2,-4.6);
+\node[anchor=north west, font=\scriptsize\bfseries] at (0.38,-1.78) {\texttt{lsass.exe}};
+
+\node[sub, text width=7.0cm] (lsa) at (4.2,-2.5)
+  {\textbf{LSA}: policy, auditing, logon sessions, token creation};
+\node[pkg, text width=7.0cm] (ap) at (4.2,-3.3)
+  {authentication packages: \texttt{msv1\_0} (NTLM) \textperiodcentered{} kerberos};
+\node[pkg, text width=7.0cm] (store) at (4.2,-4.15)
+  {SAM and SECURITY hive access};
+
+\draw[arr] (4.2,-1.45) -- (4.2,-2.15);
+
+% the boundary and the token -----------------------------------------
+\draw[dashed, draw=black!35] (0.1,-5.7) -- (8.3,-5.7);
+\node[anchor=south east, font=\scriptsize\itshape, text=black!60] at (8.25,-5.72) {user mode};
+\node[anchor=north east, font=\scriptsize\itshape, text=black!60] at (8.25,-5.72) {kernel mode};
+
+\draw[arr] (4.2,-4.6) -- (4.2,-6.05)
+  node[midway, right=3pt, font=\scriptsize, text=black!70] {access token};
+
+% authorisation ------------------------------------------------------
+\node[kern, text width=4.3cm] (srm) at (2.45,-6.6)
+  {\textbf{SRM}\\ compares token with DACL};
+\node[proc, text width=2.5cm] (obj) at (6.95,-6.6)
+  {object + DACL\\{\scriptsize file, share, service}};
+
+\draw[arr] (5.68,-6.6) -- (4.65,-6.6);
+
+% legend -------------------------------------------------------------
+\fill[blue!8] (0.3,-7.5) rectangle (0.6,-7.35);
+\node[right, font=\scriptsize] at (0.66,-7.425) {process};
+\fill[teal!10] (2.0,-7.5) rectangle (2.3,-7.35);
+\node[right, font=\scriptsize] at (2.36,-7.425) {LSA};
+\fill[orange!22] (3.7,-7.5) rectangle (4.0,-7.35);
+\node[right, font=\scriptsize] at (4.06,-7.425) {package};
+\fill[black!12] (5.6,-7.5) rectangle (5.9,-7.35);
+\node[right, font=\scriptsize] at (5.96,-7.425) {kernel};
+
+\end{tikzpicture}
+\caption{Where a logon is decided, and where it is enforced.}
+\label{fig:lsa-stack}
+\end{figure}

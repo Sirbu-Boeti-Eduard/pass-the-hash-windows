@@ -1,0 +1,47 @@
+% Figure: the layering, as a timeline. Used in section 1.1.
+% Deliberately spare: six stops, two lines of text each, and a caption that
+% admits the axis is not to scale.
+\begin{figure}[htbp]
+\centering
+\small
+\begin{tikzpicture}[
+  ev/.style={circle, fill=black!70, inner sep=0pt, minimum size=4pt},
+  yr/.style={font=\footnotesize\bfseries},
+  lbl/.style={align=center, font=\scriptsize}
+]
+\draw[-{Stealth[length=2mm]}, draw=black!45, thick] (0.3,0) -- (13.4,0);
+
+% 1993 - year above, label below
+\node[ev] (e1) at (1.5,0) {};
+\node[yr, above=3pt] at (e1) {1993};
+\node[lbl, below=4pt] at (e1) {NT 3.1: domains\\and NTLM};
+
+% 2000 - label above, year below
+\node[ev] (e2) at (3.7,0) {};
+\node[lbl, above=4pt] at (e2) {Active Directory,\\Kerberos v5, PKI};
+\node[yr, below=3pt] at (e2) {2000};
+
+% 2013
+\node[ev] (e3) at (5.9,0) {};
+\node[yr, above=3pt] at (e3) {2013};
+\node[lbl, below=4pt] at (e3) {Azure AD\\reaches GA};
+
+% 2023
+\node[ev] (e4) at (8.1,0) {};
+\node[lbl, above=4pt] at (e4) {renamed\\Entra ID};
+\node[yr, below=3pt] at (e4) {2023};
+
+% 2025
+\node[ev] (e5) at (10.3,0) {};
+\node[yr, above=3pt] at (e5) {2025};
+\node[lbl, below=4pt] at (e5) {NTLMv1 blocked\\in Server 2025};
+
+% 2026
+\node[ev] (e6) at (12.5,0) {};
+\node[lbl, above=4pt] at (e6) {NTLM off by\\default targeted};
+\node[yr, below=3pt] at (e6) {2026};
+
+\end{tikzpicture}
+\caption{\small Windows authentication layers, 1993--2026. Evenly spaced, not to scale.}
+\label{fig:auth-timeline}
+\end{figure}

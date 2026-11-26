@@ -1,19 +1,15 @@
 % ======================================================================
-% ABSTRACT  (budget: 0.5 page)
-% Protocol | vulnerability class | what the PoC demonstrates | one result
-% Write this LAST.
+% ABSTRACT
+% Position: the same three sentences the article exists to prove, plus what
+% the lab showed. No "this paper explores". Write last.
 % ======================================================================
 \begin{abstract}
-\noindent
-% TODO: 180-220 words.
-% Required beats:
-%   1. Windows authenticates against key material, not against a password.
-%   2. NTLM and Kerberos both permit local completion of authentication.
-%   3. PtH and PtK therefore need no cracking and no replay.
-%   4. PoC: isolated lab, DC + client, hash acquired from LSASS, valid session
-%      obtained over SMB/WinRM and a TGT obtained with the same 16 bytes.
-%   5. Detection and the control that actually breaks the chain.
+% WANT: Windows authenticates against key material, not passwords. NTLM and
+% RC4 Kerberos both complete authentication locally from the NT hash, so
+% holding the hash is holding the account - no cracking, no replay, no
+% protocol break. Lab result: same 16 bytes -> SMB and WinRM session + a TGT.
+% Then one line on the control that actually removes the path, one on detection.
 %
-% \textbf{Keywords:} NTLM, Kerberos, pass-the-hash, credential theft,
-% lateral movement, Active Directory
+% \textbf{Keywords:} NTLM, Kerberos, pass-the-hash, lateral movement,
+% Active Directory, detection
 \end{abstract}
